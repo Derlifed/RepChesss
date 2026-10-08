@@ -1,133 +1,142 @@
 // /api/auth/me | login | signup | logout | forgot | reset
-import { send, fail, readJson, sameOrigin, clientIp, siteUrl } from '../_http.js';
-import { hashPassword, verifyPassword, dummyHash, newResetToken, sha256 } from '../_crypto.js';
-import { db, limited, findUserByEmail, findUserById, publicUser } from '../_db.js';
-import { currentUser, startSession, endSession } from '../_session.js';
-import { emailEnabled, sendResetEmail } from '../_email.js';
+// Supabase Auth backend. The frontend talks to Supabase Auth directly;
+// these routes are thin wrappers for server-side operations only.
 
-const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-const NAME = /^[a-z0-9_]{3,20}$/;
-const NAMEMSG = 'Usernames are 3 to 20 letters, numbers or underscores.';
-const TOO_MANY = { error: 'Too many attempts. Wait a few minutes and try again.' };
-const BAD_LINK = { error: 'This reset link is invalid or has expired. Request a new one.' };
-const clean = (v) => (typeof v === 'string' ? v.trim().toLowerCase() : '');
-const validEmail = (e) => e.length <= 254 && EMAIL.test(e);
-const passwordError = (p) =>
-  typeof p !== 'string' || p.length < 8
-    ? 'Passwords need at least 8 characters.'
-    : p.length > 200
-      ? 'Passwords can be at most 200 characters.'
-      : '';
+import { send, fail, readJson, sameOrigin } from '../_http.js';
+import { getSupabase } from '../_supabase.js';
 
 const routes = {
   async me(req, res) {
-    const user = await currentUser(req);
-    return send(res, 200, { user: user ? publicUser(user) : null });
+    // Get the current user from the auth header (Bearer token from frontend session).
+    const sb = getSupabase();
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    if (!token) return send(res, 200, { user: null });
+
+    try {
+      const { data, error } = await sb.auth.getUser(token);
+      if (error || !data.user) return send(res, 200, { user: null });
+
+      // Fetch the user profile from the profiles table.
+      const { data: profile } = await sb.from('profiles').select('id, email, username').eq('id', data.user.id).single();
+      return send(res, 200, { user: profile ?? { id: data.user.id, email: data.user.email, username: null } });
+    } catch (e) {
+      console.error('[auth/me] error:', e);
+      return send(res, 200, { user: null });
+    }
   },
 
   async signup(req, res) {
     const b = (await readJson(req)) ?? {};
-    const email = clean(b.email), username = clean(b.username), pwError = passwordError(b.password);
-    if (!validEmail(email)) return send(res, 400, { error: 'Enter a valid email address.' });
-    if (!NAME.test(username)) return send(res, 400, { error: NAMEMSG });
-    if (pwError) return send(res, 400, { error: pwError });
+    const { email, password, username } = b;
 
-    const sql = await db();
-    if (await limited(sql, `signup:${clientIp(req)}`, 10, 3600)) return send(res, 429, TOO_MANY);
-    const [seen] = await sql`SELECT
-      (SELECT 1 FROM users WHERE email = ${email}) AS email,
-      (SELECT 1 FROM usernames WHERE username = ${username}) AS username`;
-    if (seen.email) return send(res, 409, { error: 'An account with that email already exists. Log in instead.' });
-    if (seen.username) return send(res, 409, { error: 'That username is taken. Try another one.' });
-
-    const hash = await hashPassword(b.password);
-    let row;
-    try {
-      // One statement, so the account and its username are created together or not at all.
-      [row] = await sql`WITH u AS (INSERT INTO users (email, password_hash) VALUES (${email}, ${hash}) RETURNING id)
-        INSERT INTO usernames (user_id, username) SELECT id, ${username} FROM u RETURNING user_id`;
-    } catch (e) {
-      if (e?.code !== '23505') throw e;
-      const c = String(e.constraint || '');
-      return send(res, 409, {
-        error: c.includes('username')
-          ? 'That username is taken. Try another one.'
-          : c.includes('email')
-            ? 'An account with that email already exists. Log in instead.'
-            : 'That email or username is already in use.',
-      });
+    if (typeof email !== 'string' || !email.includes('@')) {
+      return send(res, 400, { error: 'Enter a valid email address.' });
     }
-    const user = { id: row.user_id, email, username, password_hash: hash };
-    startSession(req, res, user);
-    return send(res, 201, { user: publicUser(user) });
+    if (typeof username !== 'string' || !/^[a-z0-9_]{3,20}$/.test(username)) {
+      return send(res, 400, { error: 'Usernames are 3 to 20 letters, numbers or underscores.' });
+    }
+    if (typeof password !== 'string' || password.length < 8 || password.length > 200) {
+      return send(res, 400, { error: 'Passwords need at least 8 characters.' });
+    }
+
+    try {
+      const sb = getSupabase();
+      const { data, error } = await sb.auth.admin.createUser({
+        email: email.toLowerCase().trim(),
+        password,
+        email_confirm: true, // Auto-confirm in dev.
+      });
+
+      if (error) {
+        if (error.message.includes('already exists')) {
+          return send(res, 409, { error: 'An account with that email already exists. Log in instead.' });
+        }
+        return send(res, 400, { error: error.message });
+      }
+
+      // Create a profile entry.
+      const { error: profileError } = await sb.from('profiles').insert([
+        { id: data.user.id, email: data.user.email, username: username.toLowerCase().trim() },
+      ]);
+
+      if (profileError) {
+        if (profileError.message.includes('username')) {
+          return send(res, 409, { error: 'That username is taken. Try another one.' });
+        }
+        throw profileError;
+      }
+
+      return send(res, 201, {
+        user: { id: data.user.id, email: data.user.email, username: username.toLowerCase().trim() },
+      });
+    } catch (e) {
+      fail(res, e, 'auth/signup');
+    }
   },
 
   async login(req, res) {
     const b = (await readJson(req)) ?? {};
-    const email = clean(b.email), password = typeof b.password === 'string' ? b.password : '';
-    if (!validEmail(email) || !password || password.length > 200) return send(res, 401, { error: 'Invalid email or password.' });
+    const { email, password } = b;
 
-    const sql = await db();
-    if ((await limited(sql, `login:ip:${clientIp(req)}`, 40, 900)) || (await limited(sql, `login:email:${email}`, 10, 900))) {
-      return send(res, 429, TOO_MANY);
+    if (typeof email !== 'string' || !email.includes('@')) {
+      return send(res, 401, { error: 'Invalid email or password.' });
     }
-    const user = await findUserByEmail(sql, email);
-    const ok = await verifyPassword(password, user ? user.password_hash : await dummyHash());
-    if (!user || !ok) return send(res, 401, { error: 'Invalid email or password.' });
-    startSession(req, res, user);
-    return send(res, 200, { user: publicUser(user) });
+    if (typeof password !== 'string' || !password) {
+      return send(res, 401, { error: 'Invalid email or password.' });
+    }
+
+    try {
+      const sb = getSupabase();
+      const { data, error } = await sb.auth.admin.signInWithPassword({ email: email.toLowerCase().trim(), password });
+
+      if (error || !data.user) {
+        return send(res, 401, { error: 'Invalid email or password.' });
+      }
+
+      // Fetch profile.
+      const { data: profile } = await sb.from('profiles').select('id, email, username').eq('id', data.user.id).single();
+
+      return send(res, 200, {
+        user: profile ?? { id: data.user.id, email: data.user.email, username: null },
+        session: data.session,
+      });
+    } catch (e) {
+      fail(res, e, 'auth/login');
+    }
   },
 
   async logout(req, res) {
-    endSession(req, res);
+    // Logout is client-side (clear the session from Supabase). This is a no-op.
     return send(res, 200, { ok: true });
   },
 
   async forgot(req, res) {
-    const email = clean(((await readJson(req)) ?? {}).email);
-    if (!validEmail(email)) return send(res, 400, { error: 'Enter a valid email address.' });
-    if (!emailEnabled()) return send(res, 503, { error: 'Password reset by email is not set up yet.' });
+    const { email } = (await readJson(req)) ?? {};
 
-    const sql = await db();
-    if ((await limited(sql, `forgot:ip:${clientIp(req)}`, 10, 3600)) || (await limited(sql, `forgot:email:${email}`, 3, 3600))) {
-      return send(res, 429, TOO_MANY);
+    if (typeof email !== 'string' || !email.includes('@')) {
+      return send(res, 400, { error: 'Enter a valid email address.' });
     }
-    const user = await findUserByEmail(sql, email);
-    if (user) {
-      const token = newResetToken();
-      await sql.transaction([
-        sql`DELETE FROM password_resets WHERE user_id = ${user.id} OR expires_at < now()`,
-        sql`INSERT INTO password_resets (token_hash, user_id, expires_at)
-          VALUES (${sha256(token)}, ${user.id}, now() + interval '1 hour')`,
-      ]);
-      try {
-        await sendResetEmail(email, `${siteUrl(req)}/#reset=${token}`);
-      } catch (e) {
-        console.error('[auth/forgot] could not send the reset email:', e);
-        return send(res, 502, { error: 'We could not send the email right now. Try again later.' });
+
+    try {
+      const sb = getSupabase();
+      const { error } = await sb.auth.admin.generateLink({
+        type: 'recovery',
+        email: email.toLowerCase().trim(),
+      });
+
+      if (error && !error.message.includes('not found')) {
+        throw error;
       }
+
+      // Always return success, whether or not the account exists.
+      return send(res, 200, { ok: true });
+    } catch (e) {
+      fail(res, e, 'auth/forgot');
     }
-    // Same answer whether or not the account exists.
-    return send(res, 200, { ok: true });
   },
 
   async reset(req, res) {
-    const b = (await readJson(req)) ?? {};
-    const token = typeof b.token === 'string' ? b.token : '', pwError = passwordError(b.password);
-    if (!/^[\w-]{20,100}$/.test(token)) return send(res, 400, BAD_LINK);
-    if (pwError) return send(res, 400, { error: pwError });
-
-    const sql = await db();
-    if (await limited(sql, `reset:ip:${clientIp(req)}`, 20, 3600)) return send(res, 429, TOO_MANY);
-    // Deleting the row is what makes the link single-use.
-    const [t] = await sql`DELETE FROM password_resets WHERE token_hash = ${sha256(token)} AND expires_at > now() RETURNING user_id`;
-    if (!t) return send(res, 400, BAD_LINK);
-
-    await sql`UPDATE users SET password_hash = ${await hashPassword(b.password)} WHERE id = ${t.user_id}`;
-    await sql`DELETE FROM password_resets WHERE user_id = ${t.user_id}`;
-    const user = await findUserById(sql, t.user_id);
-    startSession(req, res, user);
-    return send(res, 200, { user: publicUser(user) });
+    return send(res, 500, { error: 'Password reset via this endpoint is not supported. Use the recovery link sent by email.' });
   },
 };
 
