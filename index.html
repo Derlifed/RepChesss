@@ -260,15 +260,10 @@ $('#app').innerHTML='<p class="sub" style="margin-top:28px">Loading openings…<
 load().then(home).catch(e=>{console.error(e);$('#app').innerHTML='<p class="sub" style="margin-top:28px">Could not load the openings. Reload the page to try again.</p>'});
 </script>
 <script type="module">
-// Accounts talk to /api/auth/* (see api/auth/[action].js). The session lives in an HttpOnly cookie.
-class AuthError extends Error{constructor(m,s){super(m);this.status=s}}
-const call=async(a,b)=>{let r;try{r=await fetch('/api/auth/'+a,{method:b?'POST':'GET',headers:b?{'Content-Type':'application/json'}:{},body:b?JSON.stringify(b):undefined,cache:'no-store'})}catch(e){throw new AuthError('Could not reach the server. Check your connection and try again.',0)}
- const j=await r.json().catch(()=>({}));if(!r.ok)throw new AuthError(j.error||'Something went wrong. Try again.',r.status);return j};
-const getUser=()=>call('me').then(j=>j.user,()=>null),login=(e,p)=>call('login',{email:e,password:p}).then(j=>j.user),
- signup=(e,p,n)=>call('signup',{email:e,password:p,username:n}).then(j=>j.user),logout=()=>call('logout',{}),
- requestPasswordRecovery=e=>call('forgot',{email:e}),resetPassword=(t,p)=>call('reset',{token:t,password:p}).then(j=>j.user);
+// Accounts are handled by this site's own /api/auth endpoints; the session lives in an HttpOnly cookie.
+const api=async(a,body)=>{const r=await fetch('/api/auth/'+a,body?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}:{cache:'no-store'});const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||'Something went wrong. Try again.');return j};
 const D=$('#dl'),FRESH=()=>({xp:0,streak:0,last:'',best:0,it:{},ln:{},rd:{}});
-let U=null,ready=false,T=null,W=null,EM='',NAME,NOTE=null,RT=null;
+let U=null,ready=false,T=null,W=null,NAME;
 // Combine progress from this browser with the account copy so nothing is lost.
 function merge(a,b){const o={xp:Math.max(a.xp||0,b.xp||0),best:Math.max(a.best||0,b.best||0),it:{...(a.it||{})},ln:{...(b.ln||{})},rd:{...(b.rd||{})}},
  da=Date.parse(a.last)||0,db=Date.parse(b.last)||0,w=da>=db?a:b;o.last=w.last||'';o.streak=da===db?Math.max(a.streak||0,b.streak||0):w.streak||0;
@@ -281,39 +276,33 @@ addEventListener('pagehide',()=>{if(T){clearTimeout(T);push(1)}});
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'&&T){clearTimeout(T);push(1)}});
 const refresh=()=>{const b=$('#acct');b.hidden=false;b.textContent=ME||'Log in';b.title=ME?'Account':'Log in to save your progress';if(S.view==='home'&&COURSES.length)home()};
 async function pull(){ready=false;try{const r=await fetch('/api/progress',{cache:'no-store'});if(!r.ok)throw new Error(r.status);const {data}=await r.json();if(data)P=merge(P,data);ready=true;save();clearTimeout(T);await push()}catch(e){console.warn('Could not load saved progress',e);ready=true}refresh()}
-async function setUser(u){if(!u)return;if(U&&U.id===u.id)return W;if(U)clearUser();U=u;EM=u.email||'';NAME=u.username||null;NOTE=null;ME=NAME||EM||'Account';refresh();return W=pull()}
+async function setUser(u){if(!u)return;if(U&&U.id===u.id)return W;U=u;NAME=u.username||null;ME=NAME||'Account';refresh();return W=pull()}
 const NAMEOK=/^[a-z0-9_]{3,20}$/,NAMEMSG='Usernames are 3 to 20 letters, numbers or underscores.';
 async function claim(n){const r=await fetch('/api/username',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:n})});const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||'Could not save your username. Try again.');return j.username}
 const named=n=>{NAME=n;if(n)ME=n;refresh()};
 // Ask signed-in users without a username to pick one.
-const ask=(fallback,note)=>NAME===null?view('name',NOTE||note):fallback?view(fallback,note):D.close();
-function clearUser(){clearTimeout(T);T=null;U=null;W=null;ME=null;EM='';NAME=undefined;NOTE=null;ready=false;P=FRESH();try{localStorage.setItem('repchess1',JSON.stringify(P))}catch(e){}refresh()}
-const why=e=>e instanceof AuthError?e.message:'Something went wrong. Try again.';
-const field=(id,l,ty,ac)=>`<label for="${id}">${l}</label><input id="${id}" type="${ty}" autocomplete="${ac}" required${ac==='new-password'?' minlength="8"':''}>`;
-const nfield=v=>`<label for="an">Username</label><input id="an" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" required minlength="3" maxlength="20" pattern="[A-Za-z0-9_]+" value="${esc(v||'')}">`;
+const ask=()=>NAME===null?view('name'):D.close();
+function clearUser(){clearTimeout(T);T=null;U=null;W=null;ME=null;NAME=undefined;ready=false;P=FRESH();try{localStorage.setItem('repchess1',JSON.stringify(P))}catch(e){}refresh()}
+const PWMSG='Passwords need at least 8 characters.';
+const field=(id,l,ty,ac)=>`<label for="${id}">${l}</label><input id="${id}" type="${ty}" autocomplete="${ac}" required${ty==='password'&&ac==='new-password'?' minlength="8"':''}>`;
+const nfield=(v,ac)=>`<label for="an">Username</label><input id="an" type="text" autocomplete="${ac||'username'}" autocapitalize="none" spellcheck="false" required minlength="3" maxlength="20" pattern="[A-Za-z0-9_]+" value="${esc(v||'')}">`;
 function view(m,note){const V={
- in:['Log in','Log in to save your progress to your account and pick up where you left off on any device.',field('ae','Email','email','username')+field('ap','Password','password','current-password'),'Log in',`<button type="button" class="lk" onclick="acct('up')">Create an account</button><button type="button" class="lk" onclick="acct('forgot')">Forgot password?</button>`],
- up:['Create an account','Your current progress in this browser is added to your new account. By signing up you agree to the <a href="terms.html" target="_blank">Terms</a> and <a href="privacy.html" target="_blank">Privacy Policy</a>.',nfield()+field('ae','Email','email','email')+field('ap','Password','password','new-password'),'Sign up',`<button type="button" class="lk" onclick="acct('in')">I already have an account</button>`],
- forgot:['Reset password','Enter your email and we send you a link to set a new password.',field('ae','Email','email','email'),'Send reset link',`<button type="button" class="lk" onclick="acct('in')">Back to log in</button>`],
- reset:['Set a new password','Choose a new password for your account.',field('ap','New password','password','new-password'),'Save password',''],
- name:[NAME?'Change username':'Choose a username',`${NAME?'Pick a new username for your account.':'Your account does not have a username yet. Pick one to finish setting it up.'} ${NAMEMSG}`,nfield(NAME),'Save username',''],
- me:['Your account',`Signed in as <b>${esc(ME||'')}</b>${NAME&&EM?` (${esc(EM)})`:''}. Your progress is saved to this account automatically.`,'','Log out',NAME===undefined?'':`<button type="button" class="lk" onclick="acct('name')">${NAME?'Change username':'Choose a username'}</button>`]}[m];
+ in:['Log in','Log in to save your progress to your account and pick up where you left off on any device.',nfield()+field('ap','Password','password','current-password'),'Log in',`<button type="button" class="lk" onclick="acct('up')">Create an account</button>`],
+ up:['Create an account',`Your current progress in this browser is added to your new account. ${NAMEMSG} ${PWMSG} There is no email recovery, so keep your password somewhere safe.`,nfield()+field('ap','Password','password','new-password'),'Sign up',`<button type="button" class="lk" onclick="acct('in')">I already have an account</button>`],
+ pw:['Change password',`Enter your current password and a new one. ${PWMSG} Other devices are logged out.`,field('ac','Current password','password','current-password')+field('ap','New password','password','new-password'),'Save password',`<button type="button" class="lk" onclick="acct('me')">Back</button>`],
+ name:[NAME?'Change username':'Choose a username',`${NAME?'Pick a new username for your account. You log in with it from now on.':'Your account does not have a username yet. Pick one to finish setting it up.'} ${NAMEMSG}`,nfield(NAME,'off'),'Save username',''],
+ me:['Your account',`Signed in as <b>${esc(ME||'')}</b>. Your progress is saved to this account automatically.`,'','Log out',`<button type="button" class="lk" onclick="acct('name')">${NAME?'Change username':'Choose a username'}</button><button type="button" class="lk" onclick="acct('pw')">Change password</button>`]}[m];
  D.innerHTML=`<form method="dialog" novalidate><h3 id="dlt">${V[0]}</h3><p>${V[1]}</p>${V[2]}<p id="ar" role="status" class="${note&&note[1]||''}">${note?note[0]:''}</p><div class="btns"><button class="pri" type="submit">${V[3]}</button><button type="button" onclick="dl.close()">${m==='me'?'Close':'Cancel'}</button></div>${V[4]?`<div class="alt">${V[4]}</div>`:''}</form>`;
  const f=D.querySelector('form');f.onsubmit=e=>{e.preventDefault();if(!f.reportValidity())return;go(m,f)};if(!D.open)D.showModal();const i=D.querySelector('input');if(i)i.focus()}
-async function go(m,f){const b=f.querySelector('.pri'),r=$('#ar'),e=f.querySelector('#ae')?.value.trim(),p=f.querySelector('#ap')?.value,n=f.querySelector('#an')?.value.trim().toLowerCase(),say=(t,k)=>{r.textContent=t;r.className=k||''};
+async function go(m,f){const b=f.querySelector('.pri'),r=$('#ar'),c=f.querySelector('#ac')?.value,p=f.querySelector('#ap')?.value,n=f.querySelector('#an')?.value.trim().toLowerCase(),say=(t,k)=>{r.textContent=t;r.className=k||''};
  b.disabled=true;say('');try{
-  if(m==='in'){await setUser(await login(e,p));ask();return}
-  if(m==='name'){if(!NAMEOK.test(n))return say(NAMEMSG,'err');NOTE=null;named(await claim(n));D.close();return}
-  if(m==='up'){if(!NAMEOK.test(n))return say(NAMEMSG,'err');
-   const c=await fetch('/api/username?check='+encodeURIComponent(n),{cache:'no-store'}).then(r=>r.ok?r.json():null).catch(()=>null);
-   if(c&&!c.available)return say('That username is taken. Try another one.','err');
-   await setUser(await signup(e,p,n));ask();return}
-  if(m==='forgot'){await requestPasswordRecovery(e);say('If an account exists for that email, a reset link is on its way.','ok');return}
-  if(m==='reset'){const u=await resetPassword(RT,p);RT=null;await setUser(u);ask('me',['Password updated. You are logged in.','ok']);return}
-  if(m==='me'){clearTimeout(T);if(T)await push();await logout();clearUser();D.close()}
- }catch(err){console.warn(err);say(why(err),'err')}finally{b.disabled=false}}
+  if(m==='in'){await setUser((await api('login',{username:n,password:p})).user);ask();return}
+  if(m==='up'){if(!NAMEOK.test(n))return say(NAMEMSG,'err');if(p.length<8)return say(PWMSG,'err');await setUser((await api('signup',{username:n,password:p})).user);D.close();return}
+  if(m==='name'){if(!NAMEOK.test(n))return say(NAMEMSG,'err');named(await claim(n));D.close();return}
+  if(m==='pw'){if(p.length<8)return say(PWMSG,'err');await api('password',{current:c,password:p});view('me',['Password changed.','ok']);return}
+  if(m==='me'){clearTimeout(T);if(T)await push();await api('logout',{});clearUser();D.close()}
+ }catch(err){console.warn(err);say(err.message||'Something went wrong. Try again.','err')}finally{b.disabled=false}}
 window.acct=m=>view(m||(U?'me':'in'));
-(async()=>{const m=/^#reset=([\w-]{20,200})$/.exec(location.hash);if(m){RT=m[1];history.replaceState(null,'',location.pathname+location.search)}
- const u=await getUser();if(u)await setUser(u);else refresh();
- if(RT)view('reset');else if(u&&NAME===null&&!D.open)ask()})();
+(async()=>{let u=null;try{u=(await api('me')).user}catch(e){console.warn('Could not check your login',e)}
+ if(u){await setUser(u);if(NAME===null&&!D.open)ask()}else refresh()})();
 </script></body></html>
