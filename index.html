@@ -32,7 +32,7 @@ h2{margin:28px 0 12px;font-size:20px;font-weight:700}
 button,select{font:inherit;font-weight:600;border:1px solid var(--bd);border-radius:8px;padding:9px 14px;background:var(--card);color:var(--fg);cursor:pointer}
 button:hover{background:var(--bg2)}
 button.pri{background:var(--acc);border-color:var(--acc);color:#fff}button.pri:hover{background:var(--acc);filter:brightness(1.12)}
-button:focus-visible,select:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--acc);outline-offset:2px}.feature-panel{margin:28px 0 10px;padding:clamp(16px,3vw,26px);border:1px solid var(--bd);border-radius:16px;background:linear-gradient(135deg,var(--card),var(--bg2))}.feature-panel h2{margin:8px 0 6px;font-size:clamp(22px,4vw,30px)}.feature-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;margin-top:22px}.feature-card{padding:20px;border:1px solid var(--bd);border-radius:12px;background:color-mix(in srgb,var(--card) 92%,transparent)}.feature-card h3{margin:0 0 6px}.feature-card p{color:var(--mut);font-size:14px}.feature-card label{display:block;margin:14px 0 6px;font-size:13px;font-weight:700}.feature-card input,.feature-card textarea{width:100%;font:inherit;padding:11px 13px;border:1px solid var(--bd);border-radius:9px;background:var(--bg);color:var(--fg)}.feature-card textarea{min-height:130px;resize:vertical}.feature-status{margin-top:14px;padding:12px;border-radius:9px;background:var(--bg2);white-space:pre-wrap}.analysis-moves{display:flex;flex-wrap:wrap;gap:6px;margin:14px 0;max-height:200px;overflow:auto}.analysis-moves button{padding:5px 8px}.analysis-moves button.on{background:var(--acc);color:#fff}.analysis-goal{border-left:3px solid var(--acc);padding:10px 12px;background:color-mix(in srgb,var(--acc) 10%,transparent);color:var(--fg)!important}@media(max-width:700px){.feature-grid{grid-template-columns:1fr}.feature-panel{margin-top:16px}}
 
 .tgl{padding:6px 12px}
 .q{font:inherit;width:100%;max-width:420px;margin:22px 0 0;padding:10px 14px;border:1px solid var(--bd);border-radius:8px;background:var(--card);color:var(--fg)}.q:focus-visible{outline:2px solid var(--acc);outline-offset:2px}.card[hidden]{display:none}
@@ -101,7 +101,7 @@ button:focus-visible,select:focus-visible{outline:2px solid var(--acc);outline-o
 <path id="Istar" d="M12 2l3 6.3 7 1-5 4.9 1.2 6.8L12 17.8 5.8 21 7 14.2 2 9.3l7-1z"/>
 <path id="Iheart" d="M12 21s-8-5-8-11a4.6 4.6 0 0 1 8-3 4.6 4.6 0 0 1 8 3c0 6-8 11-8 11z"/>
 <g id="Iclock"><circle cx="12" cy="12" r="9" fill="none" stroke="#38bdf8" stroke-width="2.6"/><path d="M12 7v5l3 2" fill="none" stroke="#38bdf8" stroke-width="2.6" stroke-linecap="round"/></g>
-</defs></svg><div class="wrap"><div class="hd"><div class="logo"><svg class="pc w" viewBox="0 0 45 45"><use href="#Pn"/></svg>RepChess</div><div class="hb"><div id="ub"></div><button id="acct" class="tgl" onclick="acct()" hidden>Log in</button><button id="su" class="tgl" onclick="acct('up')" hidden>Sign up</button><button class="tgl" onclick="tgl()">Theme</button></div></div><div id="app"></div></div><dialog id="dl" class="dl" aria-labelledby="dlt"></dialog>
+</defs></svg><div class="wrap"><div class="hd"><div class="logo"><svg class="pc w" viewBox="0 0 45 45"><use href="#Pn"/></svg>RepChess</div><div class="hb"><div id="ub"></div><button id="acct" class="tgl" onclick="acct()" hidden>Log in</button><button id="su" class="tgl" onclick="acct('up')" hidden>Sign up</button><button class="tgl" onclick="window.openAnalysis()">Analyze</button><button class="tgl" onclick="tgl()">Theme</button></div></div><div id="app"></div></div><dialog id="dl" class="dl" aria-labelledby="dlt"></dialog>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.2/chess.min.js"></script>
 <script>
 let COURSES=[];
@@ -262,11 +262,11 @@ addEventListener('keydown',e=>{const t=e.target.tagName,k=e.key;if(!S.mode||['SE
 
 
 
-function downloadAnalysis(kind){if(!ANALYSIS.sans.length)return;const rows=ANALYSIS.sans.map((m,i)=>({Move:i+1,Side:i%2?'Black':'White',SAN:m}));const csv='Move,Side,SAN\\n'+rows.map(r=>`${r.Move},${r.Side},${r.SAN}`).join('\\n');const text=ANALYSIS.pgn+'\\n\\nStrategic goal: '+$('#variation-idea').textContent;const blob=new Blob([kind==='xlsx'?csv:text],{type:kind==='xlsx'?'application/vnd.ms-excel':'text/plain'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='repchess-analysis.'+(kind==='xlsx'?'xls':'txt');a.click();URL.revokeObjectURL(a.href)}
 
 $('#app').innerHTML='<p class="sub" style="margin-top:28px">Loading openings…</p>';
 load().then(home).catch(e=>{console.error(e);$('#app').innerHTML='<p class="sub" style="margin-top:28px">Could not load the openings. Reload the page to try again.</p>'});
 </script>
+<script type="module" src="/src/chess-features.js"></script>
 <script type="module">
 // Accounts use Clerk: its browser SDK handles sign up, log in, passwords and sessions.
 // API calls send the Clerk session token; progress and stats are saved per user through /api/stats.
