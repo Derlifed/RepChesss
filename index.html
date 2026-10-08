@@ -109,7 +109,7 @@ const icOf=s=>/^[NBRQK]/.test(s)?s[0].toLowerCase():s[0]==='O'?'k':'p';
 const slug=s=>s.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
 const fmt=a=>a.map((x,j)=>(j%2?'':(j/2+1)+'.')+x).join(' ');
 async function load(){
- const T=await Promise.all([...'abcde'].map(f=>fetch('openings/'+f+'.tsv').then(r=>{if(!r.ok)throw new Error(f+'.tsv '+r.status);return r.text()})));
+ const T=await Promise.all([...'abcde'].map(f=>fetch('openings-'+f+'.tsv').then(r=>{if(!r.ok)throw new Error(f+'.tsv '+r.status);return r.text()})));
  const F=new Map();
  T.forEach(t=>t.split('\n').slice(1).forEach(row=>{const[eco,full,pgn]=row.trim().split('\t');if(!pgn)return;
   const i=full.search(/[:,]/),fam=(i<0?full:full.slice(0,i)).trim(),v=i<0?'':full.slice(i+1).trim();
