@@ -1,32 +1,23 @@
-import { pgTable, text, jsonb, timestamp, index } from "drizzle-orm/pg-core";
+import { pgTable, text, integer, jsonb, timestamp } from "drizzle-orm/pg-core";
 
-export const progress = pgTable("progress", {
-  userId: text("user_id").primaryKey(),
-  data: jsonb().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
+// Both tables are keyed by the Clerk user id (e.g. "user_2abc...").
+// Row level security is on with no policies, so only this site's API routes,
+// which connect as the database owner, can read them.
 
-export const usernames = pgTable("usernames", {
+export const userProfiles = pgTable.withRLS("user_profiles", {
   userId: text("user_id").primaryKey(),
   username: text().notNull().unique(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-// Accounts are keyed by the same user_id as usernames and progress.
-export const accounts = pgTable("accounts", {
+// The headline stats get their own columns so they're easy to query (leaderboards, reports).
+// `data` holds the trainer's full progress object, which the stats are calculated from.
+export const userStats = pgTable.withRLS("user_stats", {
   userId: text("user_id").primaryKey(),
-  passwordHash: text("password_hash").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  streak: integer().default(0).notNull(),
+  xp: integer().default(0).notNull(),
+  completed: integer().default(0).notNull(),
+  drillBest: integer("drill_best").default(0).notNull(),
+  data: jsonb().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
-
-// Only a SHA-256 hash of each session token is stored, never the token itself.
-export const sessions = pgTable(
-  "sessions",
-  {
-    tokenHash: text("token_hash").primaryKey(),
-    userId: text("user_id").notNull(),
-    expiresAt: timestamp("expires_at").notNull(),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-  },
-  (t) => [index("sessions_user_id_idx").on(t.userId)],
-);
