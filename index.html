@@ -260,46 +260,52 @@ $('#app').innerHTML='<p class="sub" style="margin-top:28px">Loading openings…<
 load().then(home).catch(e=>{console.error(e);$('#app').innerHTML='<p class="sub" style="margin-top:28px">Could not load the openings. Reload the page to try again.</p>'});
 </script>
 <script type="module">
-// Accounts are handled by this site's own /api/auth endpoints; the session lives in an HttpOnly cookie.
+// Accounts use Supabase Auth through this site's /api/auth routes; the session lives in HttpOnly cookies.
+// Progress and stats are saved per user through /api/stats.
 const api=async(a,body)=>{const r=await fetch('/api/auth/'+a,body?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}:{cache:'no-store'});const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||'Something went wrong. Try again.');return j};
 const D=$('#dl'),FRESH=()=>({xp:0,streak:0,last:'',best:0,it:{},ln:{},rd:{}});
-let U=null,ready=false,T=null,W=null,NAME;
+let U=null,ready=false,T=null,W=null,NAME,EMAIL='';
 // Combine progress from this browser with the account copy so nothing is lost.
 function merge(a,b){const o={xp:Math.max(a.xp||0,b.xp||0),best:Math.max(a.best||0,b.best||0),it:{...(a.it||{})},ln:{...(b.ln||{})},rd:{...(b.rd||{})}},
  da=Date.parse(a.last)||0,db=Date.parse(b.last)||0,w=da>=db?a:b;o.last=w.last||'';o.streak=da===db?Math.max(a.streak||0,b.streak||0):w.streak||0;
  for(const k in b.it||{})if(!o.it[k]||(b.it[k].d||0)>(o.it[k].d||0))o.it[k]=b.it[k];
  for(const k in a.ln||{})o.ln[k]=Math.max(o.ln[k]||0,a.ln[k]);
  for(const k in a.rd||{})o.rd[k]=[...new Set([...(o.rd[k]||[]),...a.rd[k]])];return o}
-const push=k=>{T=null;return fetch('/api/progress',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({data:P}),keepalive:!!k}).catch(()=>{})};
+const push=k=>{T=null;return fetch('/api/stats',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({data:P}),keepalive:!!k}).catch(()=>{})};
 window.sync=()=>{if(!U||!ready)return;clearTimeout(T);T=setTimeout(push,1200)};
 addEventListener('pagehide',()=>{if(T){clearTimeout(T);push(1)}});
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'&&T){clearTimeout(T);push(1)}});
 const refresh=()=>{const b=$('#acct');b.hidden=false;b.textContent=ME||'Log in';b.title=ME?'Account':'Log in to save your progress';if(S.view==='home'&&COURSES.length)home()};
-async function pull(){ready=false;try{const r=await fetch('/api/progress',{cache:'no-store'});if(!r.ok)throw new Error(r.status);const {data}=await r.json();if(data)P=merge(P,data);ready=true;save();clearTimeout(T);await push()}catch(e){console.warn('Could not load saved progress',e);ready=true}refresh()}
-async function setUser(u){if(!u)return;if(U&&U.id===u.id)return W;U=u;NAME=u.username||null;ME=NAME||'Account';refresh();return W=pull()}
+async function pull(){ready=false;try{const r=await fetch('/api/stats',{cache:'no-store'});if(!r.ok)throw new Error(r.status);const {data}=await r.json();if(data)P=merge(P,data);ready=true;save();clearTimeout(T);await push()}catch(e){console.warn('Could not load saved progress',e);ready=true}refresh()}
+async function setUser(u){if(!u)return;if(U&&U.id===u.id)return W;U=u;NAME=u.username||null;EMAIL=u.email||'';ME=NAME||'Account';refresh();return W=pull()}
 const NAMEOK=/^[a-z0-9_]{3,20}$/,NAMEMSG='Usernames are 3 to 20 letters, numbers or underscores.';
 async function claim(n){const r=await fetch('/api/username',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:n})});const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||'Could not save your username. Try again.');return j.username}
 const named=n=>{NAME=n;if(n)ME=n;refresh()};
 // Ask signed-in users without a username to pick one.
 const ask=()=>NAME===null?view('name'):D.close();
-function clearUser(){clearTimeout(T);T=null;U=null;W=null;ME=null;NAME=undefined;ready=false;P=FRESH();try{localStorage.setItem('repchess1',JSON.stringify(P))}catch(e){}refresh()}
-const PWMSG='Passwords need at least 8 characters.';
-const field=(id,l,ty,ac)=>`<label for="${id}">${l}</label><input id="${id}" type="${ty}" autocomplete="${ac}" required${ty==='password'&&ac==='new-password'?' minlength="8"':''}>`;
+function clearUser(){clearTimeout(T);T=null;U=null;W=null;ME=null;NAME=undefined;EMAIL='';ready=false;P=FRESH();try{localStorage.setItem('repchess1',JSON.stringify(P))}catch(e){}refresh()}
+const PWMSG='Passwords need 8 to 72 characters.',EMAILOK=/^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const field=(id,l,ty,ac)=>`<label for="${id}">${l}</label><input id="${id}" type="${ty}" autocomplete="${ac}" required${ty==='password'&&ac==='new-password'?' minlength="8" maxlength="72"':''}>`;
+const efield=()=>field('ae','Email','email','email');
 const nfield=(v,ac)=>`<label for="an">Username</label><input id="an" type="text" autocomplete="${ac||'username'}" autocapitalize="none" spellcheck="false" required minlength="3" maxlength="20" pattern="[A-Za-z0-9_]+" value="${esc(v||'')}">`;
 function view(m,note){const V={
- in:['Log in','Log in to save your progress to your account and pick up where you left off on any device.',nfield()+field('ap','Password','password','current-password'),'Log in',`<button type="button" class="lk" onclick="acct('up')">Create an account</button>`],
- up:['Create an account',`Your current progress in this browser is added to your new account. ${NAMEMSG} ${PWMSG} There is no email recovery, so keep your password somewhere safe.`,nfield()+field('ap','Password','password','new-password'),'Sign up',`<button type="button" class="lk" onclick="acct('in')">I already have an account</button>`],
+ in:['Log in','Log in to save your progress to your account and pick up where you left off on any device.',efield()+field('ap','Password','password','current-password'),'Log in',`<button type="button" class="lk" onclick="acct('up')">Create an account</button>`],
+ up:['Create an account',`Your current progress in this browser is added to your new account. ${NAMEMSG} ${PWMSG}`,nfield()+efield()+field('ap','Password','password','new-password'),'Sign up',`<button type="button" class="lk" onclick="acct('in')">I already have an account</button>`],
  pw:['Change password',`Enter your current password and a new one. ${PWMSG} Other devices are logged out.`,field('ac','Current password','password','current-password')+field('ap','New password','password','new-password'),'Save password',`<button type="button" class="lk" onclick="acct('me')">Back</button>`],
- name:[NAME?'Change username':'Choose a username',`${NAME?'Pick a new username for your account. You log in with it from now on.':'Your account does not have a username yet. Pick one to finish setting it up.'} ${NAMEMSG}`,nfield(NAME,'off'),'Save username',''],
- me:['Your account',`Signed in as <b>${esc(ME||'')}</b>. Your progress is saved to this account automatically.`,'','Log out',`<button type="button" class="lk" onclick="acct('name')">${NAME?'Change username':'Choose a username'}</button><button type="button" class="lk" onclick="acct('pw')">Change password</button>`]}[m];
+ name:[NAME?'Change username':'Choose a username',`${NAME?'Pick a new username for your account. It is shown instead of your email.':'Your account does not have a username yet. Pick one to finish setting it up.'} ${NAMEMSG}`,nfield(NAME,'off'),'Save username',''],
+ me:['Your account',`Signed in as <b>${esc(ME||'')}</b>${EMAIL&&EMAIL!==ME?` (${esc(EMAIL)})`:''}. Your progress is saved to this account automatically.`,'','Log out',`<button type="button" class="lk" onclick="acct('name')">${NAME?'Change username':'Choose a username'}</button><button type="button" class="lk" onclick="acct('pw')">Change password</button>`]}[m];
  D.innerHTML=`<form method="dialog" novalidate><h3 id="dlt">${V[0]}</h3><p>${V[1]}</p>${V[2]}<p id="ar" role="status" class="${note&&note[1]||''}">${note?note[0]:''}</p><div class="btns"><button class="pri" type="submit">${V[3]}</button><button type="button" onclick="dl.close()">${m==='me'?'Close':'Cancel'}</button></div>${V[4]?`<div class="alt">${V[4]}</div>`:''}</form>`;
  const f=D.querySelector('form');f.onsubmit=e=>{e.preventDefault();if(!f.reportValidity())return;go(m,f)};if(!D.open)D.showModal();const i=D.querySelector('input');if(i)i.focus()}
-async function go(m,f){const b=f.querySelector('.pri'),r=$('#ar'),c=f.querySelector('#ac')?.value,p=f.querySelector('#ap')?.value,n=f.querySelector('#an')?.value.trim().toLowerCase(),say=(t,k)=>{r.textContent=t;r.className=k||''};
+async function go(m,f){const b=f.querySelector('.pri'),r=$('#ar'),c=f.querySelector('#ac')?.value,p=f.querySelector('#ap')?.value,e=f.querySelector('#ae')?.value.trim().toLowerCase(),n=f.querySelector('#an')?.value.trim().toLowerCase(),say=(t,k)=>{r.textContent=t;r.className=k||''};
  b.disabled=true;say('');try{
-  if(m==='in'){await setUser((await api('login',{username:n,password:p})).user);ask();return}
-  if(m==='up'){if(!NAMEOK.test(n))return say(NAMEMSG,'err');if(p.length<8)return say(PWMSG,'err');await setUser((await api('signup',{username:n,password:p})).user);D.close();return}
+  if(m==='in'){if(!EMAILOK.test(e))return say('Enter a valid email address.','err');await setUser((await api('login',{email:e,password:p})).user);ask();return}
+  if(m==='up'){if(!NAMEOK.test(n))return say(NAMEMSG,'err');if(!EMAILOK.test(e))return say('Enter a valid email address.','err');if(p.length<8||p.length>72)return say(PWMSG,'err');
+   const j=await api('signup',{username:n,email:e,password:p});
+   // With email confirmation on in Supabase, there's no session until the link is opened.
+   if(j.confirm){view('in',[j.message,'ok']);$('#ae').value=e;$('#ap').focus();return}
+   await setUser(j.user);D.close();return}
   if(m==='name'){if(!NAMEOK.test(n))return say(NAMEMSG,'err');named(await claim(n));D.close();return}
-  if(m==='pw'){if(p.length<8)return say(PWMSG,'err');await api('password',{current:c,password:p});view('me',['Password changed.','ok']);return}
+  if(m==='pw'){if(p.length<8||p.length>72)return say(PWMSG,'err');await api('password',{current:c,password:p});view('me',['Password changed.','ok']);return}
   if(m==='me'){clearTimeout(T);if(T)await push();await api('logout',{});clearUser();D.close()}
  }catch(err){console.warn(err);say(err.message||'Something went wrong. Try again.','err')}finally{b.disabled=false}}
 window.acct=m=>view(m||(U?'me':'in'));
