@@ -308,7 +308,8 @@ const js=src=>new Promise((ok,no)=>{const s=document.createElement('script');s.s
   const r=await fetch('/api/config',{cache:'no-store'}),j=await r.json().catch(()=>({}));if(!r.ok||!j.publishableKey)throw new Error(j.error||'Accounts are not set up yet.');
   const encodedHost=j.publishableKey.split('_')[2];
   if(!encodedHost)throw new Error('Invalid Clerk publishable key.');
-  const host=atob(encodedHost.replace(/-/g,'+').replace(/_/g,'/')+'==').replace(/\$$/,'');
+  const base64Host=encodedHost.replace(/-/g,'+').replace(/_/g,'/');
+  const host=atob(base64Host+'='.repeat((4-base64Host.length%4)%4)).replace(/\$$/,'');
   if(!/^[a-z0-9.-]+$/i.test(host))throw new Error('Invalid Clerk Frontend API host.');
   await js(`https://${host}/npm/@clerk/ui@1/dist/ui.browser.js`);await js(`https://${host}/npm/@clerk/clerk-js@6/dist/clerk.browser.js`);
   C=new window.Clerk(j.publishableKey);await C.load({ui:{ClerkUI:window.__internal_ClerkUICtor}});
