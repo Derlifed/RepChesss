@@ -1,6 +1,5 @@
-// Check username availability and claim a username.
 import { send, fail, readJson } from './_http.js';
-import { getSupabase } from './_supabase.js';
+import { getSupabaseAnon } from './_supabase.js';
 
 export default async function handler(req, res) {
   try {
@@ -10,33 +9,30 @@ export default async function handler(req, res) {
         return send(res, 400, { error: 'Invalid username.' });
       }
 
-      const sb = getSupabase();
-      const { data, error } = await sb.from('profiles').select('id').eq('username', username).single();
+      const sb = getSupabaseAnon();
+      const { data, error } = await sb.from('profiles').select('id').eq('username', username).maybeSingle();
       if (error && error.code !== 'PGRST116') throw error;
       return send(res, 200, { available: !data });
     }
 
     if (req.method === 'PUT') {
-      const token = req.headers.authorization?.replace('Bearer ', '');
+      const auth = req.headers.authorization || '';
+      const token = auth.startsWith('Bearer ') ? auth.slice(7) : '';
       if (!token) return send(res, 401, { error: 'Unauthorized' });
 
       const body = await readJson(req);
-      const username = body.username?.toLowerCase().trim();
+      const username = String(body?.username ?? '').toLowerCase().trim();
       if (!username || !/^[a-z0-9_]{3,20}$/.test(username)) {
         return send(res, 400, { error: 'Usernames are 3 to 20 letters, numbers or underscores.' });
       }
 
-      const sb = getSupabase();
-      const { data: authUser, error: authError } = await sb.auth.getUser(token);
-      if (authError || !authUser.user) return send(res, 401, { error: 'Unauthorized' });
+      const sb = getSupabaseAnon();
+      const { data: userData, error: userError } = await sb.auth.getUser(token);
+      if (userError || !userData.user) return send(res, 401, { error: 'Unauthorized' });
 
-      const { error } = await sb
-        .from('profiles')
-        .update({ username })
-        .eq('id', authUser.user.id);
-
+      const { error } = await sb.from('profiles').update({ username }).eq('id', userData.user.id);
       if (error) {
-        if (error.message.includes('unique')) {
+        if (String(error.message || '').toLowerCase().includes('duplicate')) {
           return send(res, 409, { error: 'That username is taken. Try another one.' });
         }
         throw error;

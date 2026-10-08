@@ -1,28 +1,34 @@
-// Save/load user progress. Requires Bearer token in Authorization header.
 import { send, fail, readJson } from './_http.js';
-import { getSupabase } from './_supabase.js';
+import { getSupabaseAnon } from './_supabase.js';
 
 export default async function handler(req, res) {
-  const token = req.headers.authorization?.replace('Bearer ', '');
+  const auth = req.headers.authorization || '';
+  const token = auth.startsWith('Bearer ') ? auth.slice(7) : '';
   if (!token) return send(res, 401, { error: 'Unauthorized' });
 
   try {
-    const sb = getSupabase();
-    const { data: authUser, error: authError } = await sb.auth.getUser(token);
-    if (authError || !authUser.user) return send(res, 401, { error: 'Unauthorized' });
-
-    const userId = authUser.user.id;
+    const sb = getSupabaseAnon();
+    const { data, error } = await sb.auth.getUser(token);
+    if (error || !data.user) return send(res, 401, { error: 'Unauthorized' });
 
     if (req.method === 'GET') {
-      const { data, error } = await sb.from('progress').select('data').eq('user_id', userId).single();
-      if (error && error.code !== 'PGRST116') throw error; // PGRST116 = no rows
-      return send(res, 200, { data: data?.data ?? null });
+      const { data: saved, error: lookupError } = await sb
+        .from('progress')
+        .select('data')
+        .eq('user_id', data.user.id)
+        .maybeSingle();
+
+      if (lookupError && lookupError.code !== 'PGRST116') throw lookupError;
+      return send(res, 200, { data: saved?.data ?? null });
     }
 
     if (req.method === 'PUT') {
       const body = await readJson(req);
-      const { error } = await sb.from('progress').upsert({ user_id: userId, data: body.data });
-      if (error) throw error;
+      const { error: upsertError } = await sb
+        .from('progress')
+        .upsert({ user_id: data.user.id, data: body?.data ?? {} }, { onConflict: 'user_id' });
+
+      if (upsertError) throw upsertError;
       return send(res, 200, { ok: true });
     }
 
