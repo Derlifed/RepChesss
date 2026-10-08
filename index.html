@@ -287,7 +287,7 @@ async function claim(n){const r=await call('/api/username',{method:'PUT',headers
 const named=n=>{NAME=n;if(n)ME=n;refresh()};
 // Ask signed-in users without a username to pick one.
 const ask=()=>NAME===null?view('name'):D.close();
-function clearUser(){clearTimeout(T);T=null;U=null;W=null;ME=null;NAME=undefined;EMAIL='';ready=false;P=FRESH();try{localStorage.setItem('repchess1',JSON.stringify(P))}catch(e){}refresh()}
+function clearUser(){clearTimeout(T);T=null;U=null;W=null;ME=null;NAME=undefined;EMAIL='';ready=false;try{localStorage.setItem('repchess1',JSON.stringify(P))}catch(e){}refresh()}
 const nfield=(v,ac)=>`<label for="an">Username</label><input id="an" type="text" autocomplete="${ac||'username'}" autocapitalize="none" spellcheck="false" required minlength="3" maxlength="20" pattern="[A-Za-z0-9_]+" value="${esc(v||'')}">`;
 function view(m,note){const V={
  off:['Accounts are unavailable',OFF||'Accounts are not set up yet. Your progress is still saved in this browser.','','Close',''],
