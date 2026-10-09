@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>RepChess — Chess Opening Trainer | Practice Openings Move by Move</title><meta name="description" content="Master chess openings with RepChess. Practice 141 openings move by move, build your repertoire, and improve your board vision with interactive drills."><link rel="canonical" href="https://www.repchess.site/"><meta name="robots" content="index, follow"><meta name="theme-color" content="#1f6f4a"><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="shortcut icon" href="/favicon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="/favicon.svg"><meta property="og:type" content="website"><meta property="og:site_name" content="RepChess"><meta property="og:title" content="RepChess — Chess Opening Trainer"><meta property="og:description" content="Practice chess openings move by move with interactive drills and repertoire training."><meta property="og:url" content="https://www.repchess.site/"><meta property="og:image" content="https://www.repchess.site/favicon.svg"><meta name="twitter:card" content="summary"><meta name="twitter:title" content="RepChess — Chess Opening Trainer"><meta name="twitter:description" content="Practice chess openings move by move with interactive drills and repertoire training."><meta name="twitter:image" content="https://www.repchess.site/favicon.svg"><link rel="icon" href="favicon.svg" type="image/svg+xml"><link rel="sitemap" type="application/xml" href="/sitemap.xml"><script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"RepChess","url":"https://www.repchess.site/","description":"Interactive chess opening trainer for practicing chess repertoires move by move.","applicationCategory":"GameApplication","operatingSystem":"Any","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}}</script>
+<title>RepChess: Chess Opening Trainer</title><meta name="description" content="Chess opening trainer. Practice your repertoire move by move, one variation at a time."><link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&display=swap"><style>
 :root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);--bg:#f7f6f2;--bg2:#eeece6;--card:#fff;--fg:#1b1d1f;--mut:#5f666d;--bd:#dcdad2;--acc:#1f6f4a;--okc:#17563a;--bad:#b3261e;--l:#ebecd0;--d:#779556}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
@@ -33,7 +33,6 @@ button,select{font:inherit;font-weight:600;border:1px solid var(--bd);border-rad
 button:hover{background:var(--bg2)}
 button.pri{background:var(--acc);border-color:var(--acc);color:#fff}button.pri:hover{background:var(--acc);filter:brightness(1.12)}
 button:focus-visible,select:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
-
 .tgl{padding:6px 12px}
 .q{font:inherit;width:100%;max-width:420px;margin:22px 0 0;padding:10px 14px;border:1px solid var(--bd);border-radius:8px;background:var(--card);color:var(--fg)}.q:focus-visible{outline:2px solid var(--acc);outline-offset:2px}.card[hidden]{display:none}
 .pos{display:block;color:var(--mut)}
@@ -257,13 +256,6 @@ addEventListener('keydown',e=>{const t=e.target.tagName,k=e.key;if(!S.mode||['SE
  if(S.mode==='learn')lstep(k==='ArrowLeft'?-1:1);
  else if(S.mode==='reps'){if(k===' ')S.over?begin():hint();else if(k==='ArrowRight')begin();else begin(S.line)}
  else if(S.ended&&k===' ')drill(S.c.id)});
-
-
-
-
-
-function downloadAnalysis(kind){if(!ANALYSIS.sans.length)return;const rows=ANALYSIS.sans.map((m,i)=>({Move:i+1,Side:i%2?'Black':'White',SAN:m}));const csv='Move,Side,SAN\\n'+rows.map(r=>`${r.Move},${r.Side},${r.SAN}`).join('\\n');const text=ANALYSIS.pgn+'\\n\\nStrategic goal: '+$('#variation-idea').textContent;const blob=new Blob([kind==='xlsx'?csv:text],{type:kind==='xlsx'?'application/vnd.ms-excel':'text/plain'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='repchess-analysis.'+(kind==='xlsx'?'xls':'txt');a.click();URL.revokeObjectURL(a.href)}
-
 $('#app').innerHTML='<p class="sub" style="margin-top:28px">Loading openings…</p>';
 load().then(home).catch(e=>{console.error(e);$('#app').innerHTML='<p class="sub" style="margin-top:28px">Could not load the openings. Reload the page to try again.</p>'});
 </script>
@@ -295,7 +287,7 @@ async function claim(n){const r=await call('/api/username',{method:'PUT',headers
 const named=n=>{NAME=n;if(n)ME=n;refresh()};
 // Ask signed-in users without a username to pick one.
 const ask=()=>NAME===null?view('name'):D.close();
-function clearUser(){clearTimeout(T);T=null;U=null;W=null;ME=null;NAME=undefined;EMAIL='';ready=false;try{localStorage.setItem('repchess1',JSON.stringify(P))}catch(e){}refresh()}
+function clearUser(){clearTimeout(T);T=null;U=null;W=null;ME=null;NAME=undefined;EMAIL='';ready=false;P=FRESH();try{localStorage.setItem('repchess1',JSON.stringify(P))}catch(e){}refresh()}
 const nfield=(v,ac)=>`<label for="an">Username</label><input id="an" type="text" autocomplete="${ac||'username'}" autocapitalize="none" spellcheck="false" required minlength="3" maxlength="20" pattern="[A-Za-z0-9_]+" value="${esc(v||'')}">`;
 function view(m,note){const V={
  off:['Accounts are unavailable',OFF||'Accounts are not set up yet. Your progress is still saved in this browser.','','Close',''],
@@ -310,19 +302,13 @@ async function go(m,f){const b=f.querySelector('.pri'),r=$('#ar'),n=f.querySelec
   if(m==='me'){clearTimeout(T);if(T)await push();await C.signOut();D.close()}
  }catch(err){console.warn(err);say(err.message||'Something went wrong. Try again.','err')}finally{b.disabled=false}}
 window.acct=m=>{if(!C)return view('off');if(m==='up')return C.openSignUp();if(m==='manage'){D.close();return C.openUserProfile()}if(!m&&!U)return C.openSignIn();view(m||'me')};
-  const js=(src,attrs={})=>new Promise((ok,no)=>{const s=document.createElement('script');s.src=src;s.crossOrigin='anonymous';Object.entries(attrs).forEach(([k,v])=>s.setAttribute(k,v));s.onload=ok;s.onerror=()=>no(new Error('Could not load '+src));document.head.appendChild(s)});
-  // Loads Clerk's browser instance from its CDN. The CDN creates window.Clerk; it is not a constructor.
-  (async()=>{try{
-    const r=await fetch('/api/config',{cache:'no-store'}),j=await r.json().catch(()=>({}));if(!r.ok||!j.publishableKey)throw new Error(j.error||'Accounts are not set up yet.');
-    const encodedHost=j.publishableKey.split('_')[2];
-    if(!encodedHost)throw new Error('Invalid Clerk publishable key.');
-    const base64Host=encodedHost.replace(/-/g,'+').replace(/_/g,'/');
-    const host=atob(base64Host+'='.repeat((4-base64Host.length%4)%4)).replace(/\$$/,'');
-    if(!/^[a-z0-9.-]+$/i.test(host))throw new Error('Invalid Clerk Frontend API host.');
-    await js(`https://${host}/npm/@clerk/ui@1/dist/ui.browser.js`);
-    await js(`https://${host}/npm/@clerk/clerk-js@6/dist/clerk.browser.js`,{'data-clerk-publishable-key':j.publishableKey});
-    C=window.Clerk;if(!C||typeof C.load!=='function')throw new Error('Clerk failed to initialize.');
-    await C.load({ui:{ClerkUI:window.__internal_ClerkUICtor}});
+const js=src=>new Promise((ok,no)=>{const s=document.createElement('script');s.src=src;s.crossOrigin='anonymous';s.onload=ok;s.onerror=()=>no(new Error('Could not load '+src));document.head.appendChild(s)});
+// Loads Clerk from its CDN. The publishable key comes from /api/config and encodes the Clerk Frontend API host.
+(async()=>{try{
+  const r=await fetch('/api/config',{cache:'no-store'}),j=await r.json().catch(()=>({}));if(!r.ok||!j.publishableKey)throw new Error(j.error||'Accounts are not set up yet.');
+  const host=atob(j.publishableKey.split('_')[2]).replace(/\$$/,'');
+  await js(`https://${host}/npm/@clerk/ui@1/dist/ui.browser.js`);await js(`https://${host}/npm/@clerk/clerk-js@6/dist/clerk.browser.js`);
+  C=new window.Clerk(j.publishableKey);await C.load({ui:{ClerkUI:window.__internal_ClerkUICtor}});
   C.mountUserButton($('#ub'));
   // Runs now and on every sign in or sign out.
   C.addListener(({user})=>{if(user)setUser(user);else if(U)clearUser()});
