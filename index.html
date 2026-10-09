@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>RepChess: Chess Opening Trainer</title><meta name="description" content="Chess opening trainer. Practice your repertoire move by move, one variation at a time."><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="shortcut icon" href="/favicon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="/favicon.svg">
+<title>RepChess: Chess Opening Trainer</title><meta name="description" content="Chess opening trainer. Practice your repertoire move by move, one variation at a time."><link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&display=swap"><style>
 :root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);--bg:#f7f6f2;--bg2:#eeece6;--card:#fff;--fg:#1b1d1f;--mut:#5f666d;--bd:#dcdad2;--acc:#1f6f4a;--okc:#17563a;--bad:#b3261e;--l:#ebecd0;--d:#779556}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
@@ -20,7 +20,7 @@ h2{margin:28px 0 12px;font-size:20px;font-weight:700}
 .chip{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:10px 16px 10px 12px}
 .chip b{display:block;font-size:20px;line-height:1.1}.chip small{color:var(--mut)}
 .ico{width:26px;height:26px;flex:none}.fl{fill:#e0702b}.bo,.st{fill:#d9a400}.ck{fill:#2f8f5b}.hr{fill:#c9372c;width:20px;height:20px}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:14px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(290px,100%),1fr));gap:14px}
 .card{background:var(--card);border:1px solid var(--bd);border-top:3px solid var(--acc);border-radius:12px;padding:18px}
 .card h3{margin:0 0 4px;font-size:18px}.card p{margin:12px 0;color:var(--mut)}
 .top{display:flex;gap:14px;align-items:center}
@@ -30,8 +30,8 @@ h2{margin:28px 0 12px;font-size:20px;font-weight:700}
 .bar{height:8px;border-radius:4px;background:var(--bd);overflow:hidden}.bar i{display:block;height:100%;background:var(--acc)}
 .btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
 button,select{font:inherit;font-weight:600;border:1px solid var(--bd);border-radius:8px;padding:9px 14px;background:var(--card);color:var(--fg);cursor:pointer}
-button:hover{background:var(--bg2)}
-button.pri{background:var(--acc);border-color:var(--acc);color:#fff}button.pri:hover{background:var(--acc);filter:brightness(1.12)}
+@media(hover:hover){button:hover{background:var(--bg2)}}
+button.pri{background:var(--acc);border-color:var(--acc);color:#fff}@media(hover:hover){button.pri:hover{background:var(--acc);filter:brightness(1.12)}}
 button:focus-visible,select:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
 .tgl{padding:6px 12px}
 .q{font:inherit;width:100%;max-width:420px;margin:22px 0 0;padding:10px 14px;border:1px solid var(--bd);border-radius:8px;background:var(--card);color:var(--fg)}.q:focus-visible{outline:2px solid var(--acc);outline-offset:2px}.card[hidden]{display:none}
@@ -84,6 +84,51 @@ button:focus-visible,select:focus-visible{outline:2px solid var(--acc);outline-o
 .dl .err{color:var(--bad);font-weight:600}.dl .ok{color:var(--okc);font-weight:600}.dl .btns button.pri{flex:1}
 .lk{background:none;border:0;padding:0;color:var(--acc);text-decoration:underline;font-weight:600;font-size:14px}.lk:hover{background:none}
 .alt{display:flex;justify-content:space-between;gap:10px;margin-top:14px}
+
+/* Touch, small screens and drag and drop */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+button,select{touch-action:manipulation}
+.wrap{padding-left:max(18px,env(safe-area-inset-left));padding-right:max(18px,env(safe-area-inset-right))}
+.hd{flex-wrap:wrap;gap:8px 12px}.hb{flex-wrap:wrap;justify-content:flex-end;margin-left:auto}.hb button{flex:none;white-space:nowrap}
+.board{touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
+.btns select{flex:1 1 100%;min-width:0;max-width:100%}
+.sq.own{touch-action:none;cursor:grab}
+.sq.hv{box-shadow:inset 0 0 0 3px rgba(255,255,255,.95),inset 0 0 0 5px rgba(15,23,42,.5)}
+.ghost{position:fixed;left:0;top:0;z-index:1000;pointer-events:none;will-change:transform}
+.ghost .pc{filter:drop-shadow(0 6px 5px rgba(0,0,0,.4))}
+body.dragging,body.dragging *{cursor:grabbing!important;-webkit-user-select:none;user-select:none}
+.dl{max-height:calc(100dvh - 32px);overflow:auto}
+@media(pointer:coarse){button,select{min-height:44px}.hb .tgl{min-height:40px}.lk{min-height:0;padding:10px 0}}
+@media(hover:none){.keys{display:none}}
+@media(max-width:640px){
+.wrap{padding-bottom:36px;padding-left:max(10px,env(safe-area-inset-left));padding-right:max(10px,env(safe-area-inset-right))}
+.hd{padding:8px 0;gap:8px}.logo{font-size:17px;gap:6px}.logo svg{width:28px;height:28px;padding:4px}.hb{gap:5px}.tgl{font-size:14px;padding:6px 8px}
+h1{margin:20px 0 6px}.sub{margin-bottom:14px}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:8px}.chip{padding:8px 10px;gap:8px}.chip b{font-size:18px}
+.q{max-width:none;margin-top:16px}.sec{margin:22px 0 10px}
+.card{padding:14px}.card .btns button,.panel .btns button{flex:1 1 auto}
+.play{gap:14px}.boardw{padding:0;border:0;background:none;gap:6px}
+.board{--s:min(calc(100vw - 52px),540px)}
+.eb{width:10px;margin:30px 0}.eb em{display:none}
+.panel{max-width:none;min-width:0;padding:14px}
+.ttl{margin:4px 0 6px;gap:8px;font-size:18px}.ttl svg.pc{width:28px;height:28px}.crumb{margin-top:8px}
+}
+.ti{display:none;margin:0 3px}
+@media(max-width:480px){.tt{display:none}.ti{display:block}}
+@media(max-width:640px) and (pointer:coarse){.board{--s:min(calc(100vw - 36px),540px)}}
+@media(orientation:landscape) and (max-height:520px) and (pointer:coarse){
+.play{flex-wrap:nowrap}.panel{flex:1 1 240px;min-width:0}
+.board{--s:min(calc(100dvh - 100px),calc(100vw - 330px),540px)}
+.hd{padding:6px 0}.ttl{margin:6px 0}.crumb{margin-top:8px}
+}
+/* On phones the feedback message and the buttons sit right under the board, so they are on screen without scrolling. The drill timer stays first. */
+@media(max-width:640px),(orientation:landscape) and (max-height:520px) and (pointer:coarse){
+.panel{display:flex;flex-direction:column}
+.panel #msg{order:1;margin:0}.panel #ctl{order:2;margin:10px 0 0}.panel #why{order:3;min-height:0;margin:10px 0 0}.panel #info{order:4;margin-top:12px}.panel #keys{order:5}.panel #mv{order:6}
+.panel #info:has(.hud){order:0;margin:0 0 10px}
+.line{font-size:17px}
+}
+@media(prefers-reduced-motion:reduce){*,::before,::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
 </style></head>
 <body><svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
 <linearGradient id="gw" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#cdd4e4"/></linearGradient>
@@ -100,7 +145,7 @@ button:focus-visible,select:focus-visible{outline:2px solid var(--acc);outline-o
 <path id="Istar" d="M12 2l3 6.3 7 1-5 4.9 1.2 6.8L12 17.8 5.8 21 7 14.2 2 9.3l7-1z"/>
 <path id="Iheart" d="M12 21s-8-5-8-11a4.6 4.6 0 0 1 8-3 4.6 4.6 0 0 1 8 3c0 6-8 11-8 11z"/>
 <g id="Iclock"><circle cx="12" cy="12" r="9" fill="none" stroke="#38bdf8" stroke-width="2.6"/><path d="M12 7v5l3 2" fill="none" stroke="#38bdf8" stroke-width="2.6" stroke-linecap="round"/></g>
-</defs></svg><div class="wrap"><div class="hd"><div class="logo"><svg class="pc w" viewBox="0 0 45 45"><use href="#Pn"/></svg>RepChess</div><div class="hb"><div id="ub"></div><button id="acct" class="tgl" onclick="acct()" hidden>Log in</button><button id="su" class="tgl" onclick="acct('up')" hidden>Sign up</button><button class="tgl" onclick="tgl()">Theme</button></div></div><div id="app"></div></div><dialog id="dl" class="dl" aria-labelledby="dlt"></dialog>
+</defs></svg><div class="wrap"><div class="hd"><div class="logo"><svg class="pc w" viewBox="0 0 45 45"><use href="#Pn"/></svg>RepChess</div><div class="hb"><div id="ub"></div><button id="acct" class="tgl" onclick="acct()" hidden>Log in</button><button id="su" class="tgl" onclick="acct('up')" hidden>Sign up</button><button class="tgl" onclick="tgl()" aria-label="Switch theme" title="Switch theme"><span class="tt">Theme</span><svg class="ti" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor"/></svg></button></div></div><div id="app"></div></div><dialog id="dl" class="dl" aria-labelledby="dlt"></dialog>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.2/chess.min.js"></script>
 <script>
 let COURSES=[];
@@ -125,7 +170,7 @@ async function load(){
   c.desc=`${side==='w'?'White':'Black'} repertoire with ${all.length} named line${all.length===1?'':'s'} (ECO ${er})${pre.length?', starting '+fmt(pre):''}.`;return c})
   .filter(c=>c.lines.length).sort((a,b)=>b.lines.length-a.lines.length||a.name.localeCompare(b.name));
 }
-const INT=[0,1,2,4,8,16],DAY=864e5;
+const INT=[0,1,2,4,8,16],DAY=864e5,RM=matchMedia('(prefers-reduced-motion: reduce)'),COARSE=matchMedia('(hover: none)');
 const $=s=>document.querySelector(s),P0=a=>a.map(x=>' '+x).join('');
 let P=null;try{P=JSON.parse((localStorage.getItem('repchess1')||localStorage.getItem('repforge1')))}catch(e){}
 P=P||{xp:0,streak:0,last:'',best:0,it:{},ln:{},rd:{}};
@@ -148,21 +193,71 @@ function home(){clearInterval(S.t);S={view:'home'};
 function flt(v){v=v.trim().toLowerCase();document.querySelectorAll('.grid').forEach(g=>{let n=0;g.querySelectorAll('.card').forEach(c=>{const on=c.dataset.n.includes(v);c.hidden=!on;n+=on});g.previousElementSibling.querySelector('span').textContent=n})}
 function reset(){if(!S.rc){S.rc=1;$('#rs').textContent='Click again to confirm reset';return}P={xp:0,streak:0,last:'',best:0,it:{},ln:{},rd:{}};save();home()}
 function shell(c,title){S.c=c;clearInterval(S.t);
- $('#app').innerHTML=`<div class="crumb"><button onclick="home()">Back to courses</button><span class="pill">${title}</span></div><h2 class="ttl"><svg class="pc ${c.side}" viewBox="0 0 45 45"><use href="#P${c.ic}"/></svg>${c.name}</h2><div class="play"><div class="boardw"><div id="eb" class="eb" title="Estimate from material and piece placement. Not an engine."></div><div class="bcol"><div id="ct" class="tray"></div><div id="board" class="board"></div><div id="cb" class="tray"></div><div id="ov" class="ov"></div></div></div><div class="panel"><div id="info"></div><div id="msg" class="msg"></div><div id="why" class="why"></div><div id="ctl" class="btns"></div><p id="keys" class="keys"></p><div id="mv" class="mv"></div></div></div>`}
+ $('#app').innerHTML=`<div class="crumb"><button onclick="home()">Back to courses</button><span class="pill">${title}</span></div><h2 class="ttl"><svg class="pc ${c.side}" viewBox="0 0 45 45"><use href="#P${c.ic}"/></svg>${c.name}</h2><div class="play"><div class="boardw"><div id="eb" class="eb" title="Estimate from material and piece placement. Not an engine."></div><div class="bcol"><div id="ct" class="tray"></div><div id="board" class="board"></div><div id="cb" class="tray"></div><div id="ov" class="ov"></div></div></div><div class="panel"><div id="info"></div><div id="msg" class="msg"></div><div id="why" class="why"></div><div id="ctl" class="btns"></div><p id="keys" class="keys"></p><div id="mv" class="mv"></div></div></div>`;scrollTo(0,0);if(matchMedia('(orientation:landscape) and (max-height:520px) and (pointer:coarse)').matches)$('.boardw').scrollIntoView({block:'center'})}
 function msg(t,k){const e=$('#msg');e.className='msg '+(k||'');e.textContent=t;e.style.animation='none';e.offsetWidth;e.style.animation=''}
-function draw(){const g=S.g,fl=S.c.side==='b',B=$('#board'),t=S.sel?g.moves({square:S.sel,verbose:true}).map(m=>m.to):[],ck=g.in_check();let h='';
- for(let r=0;r<8;r++)for(let f=0;f<8;f++){const fi=fl?7-f:f,ra=fl?r:7-r,sq='abcdefgh'[fi]+(ra+1),p=g.get(sq),c=['sq',(fi+ra)%2?'l':'d'];
+function draw(){const g=S.g,fl=S.c.side==='b',B=$('#board'),t=S.sel?g.moves({square:S.sel,verbose:true}).map(m=>m.to):[],ck=g.in_check(),play=S.mode!=='learn';let h='';
+ for(let r=0;r<8;r++)for(let f=0;f<8;f++){const fi=fl?7-f:f,ra=fl?r:7-r,sq='abcdefgh'[fi]+(ra+1),p=g.get(sq),c=['sq',(fi+ra)%2?'l':'d'];if(play&&p&&p.color===S.c.side)c.push('own');
   if(S.last&&(S.last.from===sq||S.last.to===sq))c.push('lm');if(S.sel===sq)c.push('sel');if(S.hint&&S.hint.includes(sq))c.push('hint');
   if(ck&&p&&p.type==='k'&&p.color===g.turn())c.push('chk');if(t.includes(sq))c.push('tg',p?'cap':'');
   h+=`<div class="${c.join(' ')}" data-s="${sq}" onclick="clk('${sq}')">${f===0?`<i class="co r">${ra+1}</i>`:''}${r===7?`<i class="co f">${'abcdefgh'[fi]}</i>`:''}${p?`<svg class="pc ${p.color}" viewBox="0 0 45 45"><use href="#P${p.type}"/></svg>`:''}</div>`}
  B.innerHTML=h;try{trays();evbar()}catch(e){console.warn(e)}
- if(S.anim){const[a,b]=S.anim,pa=B.querySelector(`[data-s="${a}"]`).getBoundingClientRect(),pb=B.querySelector(`[data-s="${b}"]`).getBoundingClientRect(),el=B.querySelector(`[data-s="${b}"] svg`);
-  if(el)el.animate([{transform:`translate(${pa.left-pb.left}px,${pa.top-pb.top}px)`,zIndex:9},{transform:'none',zIndex:9}],{duration:260,easing:'cubic-bezier(.25,.9,.3,1)'});S.anim=null}}
-function shake(){$('#board').animate([{transform:'translateX(0)'},{transform:'translateX(-7px)'},{transform:'translateX(6px)'},{transform:'translateX(-3px)'},{transform:'none'}],{duration:280})}
+ if(S.anim){const[a,b]=S.anim;S.anim=null;if(!S.still&&!RM.matches){const pa=B.querySelector(`[data-s="${a}"]`).getBoundingClientRect(),pb=B.querySelector(`[data-s="${b}"]`).getBoundingClientRect(),el=B.querySelector(`[data-s="${b}"] svg`);
+  if(el)el.animate([{transform:`translate(${pa.left-pb.left}px,${pa.top-pb.top}px)`,zIndex:9},{transform:'none',zIndex:9}],{duration:260,easing:'cubic-bezier(.25,.9,.3,1)'})}}
+ if(DR&&DR.on)dragMark()}
+function shake(){if(RM.matches)return;$('#board').animate([{transform:'translateX(0)'},{transform:'translateX(-7px)'},{transform:'translateX(6px)'},{transform:'translateX(-3px)'},{transform:'none'}],{duration:280})}
 function tgl(){const r=document.documentElement;r.dataset.theme=(r.dataset.theme||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'))==='dark'?'light':'dark'}
 function clk(sq){if(S.lock||S.over||S.mode==='learn')return;const g=S.g;
  if(S.sel&&S.sel!==sq&&g.moves({square:S.sel,verbose:true}).some(m=>m.to===sq)){const f=S.sel;S.sel=null;return move(f,sq)}
  const p=g.get(sq);S.sel=p&&p.color===S.c.side?sq:null;draw()}
+// Remember where you were in the course list, so Back to courses puts you back there.
+let HY=0;addEventListener('scroll',()=>{if(S.view==='home')HY=scrollY},{passive:true});
+{const h0=home;home=function(){const fromGame=S.mode;const r=h0.apply(this,arguments);if(fromGame)scrollTo(0,HY);return r}}
+// Drag a piece with a mouse, finger or pen. Tapping a piece and then a square still works as before.
+let DR=null,DRT=0;
+const sqAt=(x,y)=>{const B=$('#board');if(!B||!S.c)return null;const r=B.getBoundingClientRect(),c=Math.floor((x-r.left)/r.width*8),w=Math.floor((y-r.top)/r.height*8);
+ if(c<0||c>7||w<0||w>7)return null;const fl=S.c.side==='b';return 'abcdefgh'[fl?7-c:c]+((fl?w:7-w)+1)};
+function dragStart(e){
+ if(DR||!e.isPrimary||e.button>0||!S.g||S.lock||S.over||!S.mode||S.mode==='learn')return;
+ const q=e.target.closest&&e.target.closest('#board .sq');if(!q)return;
+ const p=S.g.get(q.dataset.s);if(!p||p.color!==S.c.side)return;
+ DR={id:e.pointerId,from:q.dataset.s,x:e.clientX,y:e.clientY,g:S.g,on:false,touch:e.pointerType==='touch'}}
+// Marks the dragged piece's square and the square it would land on. Runs again after any redraw.
+function dragMark(){const B=$('#board');if(!B||!DR)return;B.querySelectorAll('.hv').forEach(x=>x.classList.remove('hv'));
+ const a=B.querySelector(`[data-s="${DR.from}"] .pc`);if(a)a.style.opacity='.3';
+ if(DR.hv){const h=B.querySelector(`[data-s="${DR.hv}"]`);if(h)h.classList.add('hv')}}
+function dragBegin(){
+ const B=$('#board'),src=B&&B.querySelector(`[data-s="${DR.from}"] .pc`);if(!src||S.g!==DR.g)return dragEnd();
+ try{B.setPointerCapture(DR.id)}catch(_){}
+ const sz=B.getBoundingClientRect().width/8,gh=document.createElement('div');
+ DR.on=true;DR.sq=sz;DR.dy=DR.touch?-sz*.8:0;DR.to=S.g.moves({square:DR.from,verbose:true}).map(m=>m.to);
+ gh.className='ghost';gh.style.width=gh.style.height=sz*1.35+'px';gh.appendChild(src.cloneNode(true));document.body.appendChild(gh);DR.ghost=gh;
+ document.body.classList.add('dragging');S.sel=DR.from;draw()}
+function dragMove(e){
+ if(!DR||e.pointerId!==DR.id)return;
+ if(!DR.on){if(Math.hypot(e.clientX-DR.x,e.clientY-DR.y)<6)return;dragBegin();if(!DR||!DR.on)return}
+ const k=DR.sq*1.35;DR.ghost.style.transform=`translate(${e.clientX-k/2}px,${e.clientY+DR.dy-k/2}px)`;
+ const s=sqAt(e.clientX,e.clientY+DR.dy),h=s&&DR.to.includes(s)?s:null;
+ if(h!==DR.hv){DR.hv=h;dragMark()}}
+function dragEnd(e,drop){
+ const d=DR;DR=null;if(!d)return;
+ if(d.ghost)d.ghost.remove();document.body.classList.remove('dragging');
+ const B=$('#board');if(B){try{B.releasePointerCapture(d.id)}catch(_){}B.querySelectorAll('.hv').forEach(x=>x.classList.remove('hv'))}
+ if(!d.on)return;
+ DRT=Date.now();
+ const to=drop&&e?sqAt(e.clientX,e.clientY+d.dy):null;
+ if(S.g!==d.g)return;
+ if(S.lock||S.over){S.sel=null;return draw()}
+ if(to&&to!==d.from&&d.to.includes(to)){S.sel=null;S.still=1;try{move(d.from,to)}finally{S.still=0}return}
+ S.sel=to===d.from?d.from:null;draw()}
+addEventListener('pointerdown',dragStart);
+addEventListener('pointermove',dragMove);
+addEventListener('pointerup',e=>{if(DR&&e.pointerId===DR.id)dragEnd(e,1)});
+addEventListener('pointercancel',e=>{if(DR&&e.pointerId===DR.id)dragEnd(e,0)});
+addEventListener('keydown',e=>{if(e.key==='Escape'&&DR)dragEnd(e,0)});
+addEventListener('blur',()=>dragEnd(null,0));
+addEventListener('contextmenu',e=>{if(DR&&DR.on)e.preventDefault()});
+// A click that arrives right after a drag is part of the drag, not a tap.
+addEventListener('click',e=>{if(Date.now()-DRT<400){DRT=0;e.stopPropagation();e.preventDefault()}},true);
 const thru=(l,k)=>P0(l.sans.slice(0,k.ply))===k.path,fin=l=>(P.rd[S.c.id]||[]).includes(P0(l.sans));
 const pick=k=>{const o=S.c.lines.filter(l=>thru(l,k)&&!fin(l)),q=o.filter(l=>S.q&&S.q.includes(l)),a=q.length?q:o;return a[Math.random()*a.length|0]};
 const expMove=()=>{const k=Object.keys(S.node.k),t=S.line.sans[S.node.ply],s=thru(S.line,S.node)&&S.node.k[t]?t:k[0];return S.g.moves({verbose:true}).find(m=>m.san===s)};
@@ -197,7 +292,7 @@ function begin(line){S.line=line||nextLine();S.g=new Chess();S.node=S.c.root;S.s
 function record(){if(S.mode==='reps'||!Object.keys(S.bad).length){const k=S.c.id+S.node.path,rd=P.rd[S.c.id]||(P.rd[S.c.id]=[]);P.ln[k]=(P.ln[k]||0)+1;if(!rd.includes(S.node.path))rd.push(S.node.path);save()}}
 function done(){S.lock=true;touch();record();
  if(S.mode==='drill'){msg('Variation done. Next one.','ok');return after(()=>begin(),700)}
- S.over=true;P.xp+=20;save();msg('Variation complete. +20 XP. Press Space for the next one.','ok');S.lock=false}
+ S.over=true;P.xp+=20;save();msg('Variation complete. +20 XP. '+(COARSE.matches?'Tap Next variation to continue.':'Press Space for the next one.'),'ok');S.lock=false}
 function info(){$('#info').innerHTML=S.mode==='drill'?`<div class="hud"><span class="pill"><svg class="ico" style="width:16px;height:16px" viewBox="0 0 24 24"><use href="#Iclock"/></svg><b>${S.time}s</b></span><span class="hearts">${'<svg class="ico hr" viewBox="0 0 24 24"><use href="#Iheart"/></svg>'.repeat(Math.max(S.lives,0))}</span><span class="pill">Score <b>${S.score}</b></span><span class="pill">x<b>${S.combo}</b></span></div>`:`<div class="line">${S.line?S.line.name:''}</div><small>Variation ${S.n} of ${S.c.lines.length}</small>${S.on?`<small class="pos">Position: ${S.on}</small>`:''}`}
 function reps(id){const c=COURSES.find(x=>x.id===id);S={mode:'reps',gen:0,round:0};shell(c,'Reps');
  $('#ctl').innerHTML='<button onclick="hint()">Hint</button><button onclick="begin(S.line)">Restart</button><button class="pri" onclick="begin()">Next variation</button>';
