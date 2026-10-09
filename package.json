@@ -5,10 +5,7 @@
   "dependencies": {
     "@clerk/backend": "^3.23.1",
     "@neondatabase/serverless": "^1.2.0",
-    "chess.js": "^1.4.0",
-    "drizzle-orm": "^1.0.0-beta.22",
-    "stockfish": "^17.1.0",
-    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
+    "drizzle-orm": "^1.0.0-beta.22"
   },
   "devDependencies": {
     "@types/node": "^26.6.4",
@@ -16,10 +13,7 @@
   },
   "scripts": {
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate",
-    "prepare:stockfish": "node scripts/prepare-stockfish.mjs",
-    "predev": "npm run prepare:stockfish",
-    "prestart": "npm run prepare:stockfish"
+    "db:migrate": "drizzle-kit migrate"
   },
   "engines": {
     "node": ">=20"
