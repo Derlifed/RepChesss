@@ -4,7 +4,14 @@ import { authConfigured } from "./auth.js";
 
 // Postgres on Neon, added to the Vercel project from the Marketplace, which sets DATABASE_URL.
 // Migrations live in netlify/database/migrations and are applied with `npm run db:migrate`.
-const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL || "";
+// Prefer the pooled application URL, while keeping the non-pooled URL as a
+// fallback for projects that only expose the migration connection variable.
+const DATABASE_URL =
+  process.env.DATABASE_URL ||
+  process.env.POSTGRES_PRISMA_URL ||
+  process.env.POSTGRES_URL ||
+  process.env.POSTGRES_URL_NON_POOLING ||
+  "";
 
 // The placeholder only keeps the module loadable; withDb answers 503 before any query runs without a real URL.
 export const db = drizzle(DATABASE_URL || "postgresql://unset@localhost/unset", { schema });

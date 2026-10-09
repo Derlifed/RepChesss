@@ -302,13 +302,19 @@ async function go(m,f){const b=f.querySelector('.pri'),r=$('#ar'),n=f.querySelec
   if(m==='me'){clearTimeout(T);if(T)await push();await C.signOut();D.close()}
  }catch(err){console.warn(err);say(err.message||'Something went wrong. Try again.','err')}finally{b.disabled=false}}
 window.acct=m=>{if(!C)return view('off');if(m==='up')return C.openSignUp();if(m==='manage'){D.close();return C.openUserProfile()}if(!m&&!U)return C.openSignIn();view(m||'me')};
-const js=src=>new Promise((ok,no)=>{const s=document.createElement('script');s.src=src;s.crossOrigin='anonymous';s.onload=ok;s.onerror=()=>no(new Error('Could not load '+src));document.head.appendChild(s)});
-// Loads Clerk from its CDN. The publishable key comes from /api/config and encodes the Clerk Frontend API host.
-(async()=>{try{
-  const r=await fetch('/api/config',{cache:'no-store'}),j=await r.json().catch(()=>({}));if(!r.ok||!j.publishableKey)throw new Error(j.error||'Accounts are not set up yet.');
-  const host=atob(j.publishableKey.split('_')[2]).replace(/\$$/,'');
-  await js(`https://${host}/npm/@clerk/ui@1/dist/ui.browser.js`);await js(`https://${host}/npm/@clerk/clerk-js@6/dist/clerk.browser.js`);
-  C=new window.Clerk(j.publishableKey);await C.load({ui:{ClerkUI:window.__internal_ClerkUICtor}});
+  const js=(src,attrs={})=>new Promise((ok,no)=>{const s=document.createElement('script');s.src=src;s.crossOrigin='anonymous';Object.entries(attrs).forEach(([k,v])=>s.setAttribute(k,v));s.onload=ok;s.onerror=()=>no(new Error('Could not load '+src));document.head.appendChild(s)});
+  // Loads Clerk's browser instance from its CDN. The CDN creates window.Clerk; it is not a constructor.
+  (async()=>{try{
+    const r=await fetch('/api/config',{cache:'no-store'}),j=await r.json().catch(()=>({}));if(!r.ok||!j.publishableKey)throw new Error(j.error||'Accounts are not set up yet.');
+    const encodedHost=j.publishableKey.split('_')[2];
+    if(!encodedHost)throw new Error('Invalid Clerk publishable key.');
+    const base64Host=encodedHost.replace(/-/g,'+').replace(/_/g,'/');
+    const host=atob(base64Host+'='.repeat((4-base64Host.length%4)%4)).replace(/\$$/,'');
+    if(!/^[a-z0-9.-]+$/i.test(host))throw new Error('Invalid Clerk Frontend API host.');
+    await js(`https://${host}/npm/@clerk/ui@1/dist/ui.browser.js`);
+    await js(`https://${host}/npm/@clerk/clerk-js@6/dist/clerk.browser.js`,{'data-clerk-publishable-key':j.publishableKey});
+    C=window.Clerk;if(!C||typeof C.load!=='function')throw new Error('Clerk failed to initialize.');
+    await C.load({ui:{ClerkUI:window.__internal_ClerkUICtor}});
   C.mountUserButton($('#ub'));
   // Runs now and on every sign in or sign out.
   C.addListener(({user})=>{if(user)setUser(user);else if(U)clearUser()});
