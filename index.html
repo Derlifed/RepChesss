@@ -121,6 +121,44 @@ h1{margin:20px 0 6px}.sub{margin-bottom:14px}
 .board{--s:min(calc(100dvh - 100px),calc(100vw - 330px),540px)}
 .hd{padding:6px 0}.ttl{margin:6px 0}.crumb{margin-top:8px}
 }
+/* Study: a demo board to copy from, and your board */
+.card .btns{flex-wrap:nowrap}.card .btns button{flex:1 1 0;min-width:0;padding-left:6px;padding-right:6px}
+@media(max-width:340px){.card .btns button{font-size:14px}}
+.study{--ds:clamp(150px,44vw,300px);display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-areas:"demo coach" "msg msg" "you you" "act act" "top top";gap:8px 12px;margin-top:6px;align-items:start}
+.top{grid-area:top;display:flex;align-items:center;gap:16px;min-width:0}.top .ttl{margin:0;flex:none}.top select{flex:1;min-width:0;max-width:none;width:100%}
+.demow{grid-area:demo}.coach{grid-area:coach}.study>.msg{grid-area:msg;margin:0}.you{grid-area:you;justify-self:center}.act{grid-area:act}
+.coach,.act{min-width:0;background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:12px 14px}
+.coach .why{min-height:0;margin:8px 0 0;font-size:14px}.coach button.pri{width:100%;margin-top:8px}.act .btns{margin-top:0}.act .keys{margin:10px 0 0}
+.lab{font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--mut);margin:0 0 4px}
+.dm{position:relative;width:var(--ds)}.board.demo{--s:var(--ds)}.demo{position:relative}.demo .sq{cursor:default}.demo .sq.hint::before{animation:none}
+.arw{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:4;animation:fadein .3s both}
+.arw line{stroke:rgba(37,99,235,.88);stroke-width:.2;stroke-linecap:round}.arw polygon{fill:rgba(37,99,235,.88)}
+.arw.fl{animation:blink .45s 2}
+@keyframes fadein{from{opacity:0}to{opacity:1}}@keyframes blink{50%{opacity:.2}}
+.cover{display:none;position:absolute;inset:0;align-items:center;justify-content:center;text-align:center;padding:8px;background:var(--bg2);border-radius:4px;color:var(--mut);font-size:14px;line-height:1.35;z-index:6}
+.cover.on{display:flex}.cover svg{width:30px;height:30px;display:block;margin:0 auto 6px}.cover b{color:var(--fg)}
+.steps{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}.st{font-size:12px;font-weight:700;padding:2px 9px;border-radius:999px;background:var(--bg2);color:var(--mut)}
+.st.on{background:var(--acc);color:#fff}.st.ok{color:var(--okc)}
+.big{font-size:22px;font-weight:700;line-height:1.2;margin:2px 0}.big b{color:var(--acc)}.big.dim{color:var(--mut);font-weight:600;font-size:18px}
+@media(max-width:699px){
+.sttl,.study .tray,.you .lab{display:none}.study .eb{margin:0}.sc{margin-top:6px}.sc button{min-height:38px}
+.coach,.act{padding:10px 12px;border-radius:10px}.big{font-size:20px}.coach .why{font-size:13px}.act .btns button{flex:1 1 auto}
+}
+@media(min-width:700px){
+.study{--ds:min(460px,calc((100vw - 126px)/2));grid-template-columns:repeat(2,auto);grid-template-areas:"top top" "coach coach" "msg msg" "demo you" "act act";gap:12px 24px;justify-content:center}
+.study .you .board{--s:var(--ds)}.demow{justify-self:center}
+.coach{display:flex;gap:24px;align-items:flex-start}.coach #info{flex:none;min-width:230px}.coach .why{flex:1;margin:0}
+}
+@media(min-width:960px){
+.study{--W:min(1200px,calc(100vw - 60px));--ds:min(400px,calc((var(--W) - 344px)/2));width:var(--W);margin-left:calc(50% - var(--W)/2);grid-template-columns:auto minmax(0,1fr) auto;grid-template-areas:"top top top" "demo coach you" "demo msg you" "demo act you";grid-template-rows:auto auto auto 1fr;gap:12px 24px}
+.you,.demow{justify-self:start}.coach{display:block;margin-top:24px}.coach #info{min-width:0}.coach .why{margin:8px 0 0}
+}
+/* Phone held sideways: the boards sit side by side, sized by the screen height */
+@media(orientation:landscape) and (max-height:520px) and (pointer:coarse){
+.study{--ds:clamp(150px,calc(100dvh - 110px),300px);width:auto;margin-left:0;grid-template-columns:auto auto minmax(0,1fr);grid-template-areas:"demo you coach" "demo you msg" "demo you act" "top top top";grid-template-rows:auto auto 1fr auto;gap:10px 14px}
+.study .you .board{--s:var(--ds)}.study .tray{display:none}.study .eb{margin:0}.you .lab{display:block}.you,.demow{justify-self:start}
+.coach{display:block;margin-top:0;padding:10px 12px}.coach #info{min-width:0}.coach .why{margin:6px 0 0;font-size:13px}.big{font-size:19px}
+}
 /* On phones the feedback message and the buttons sit right under the board, so they are on screen without scrolling. The drill timer stays first. */
 @media(max-width:640px),(orientation:landscape) and (max-height:520px) and (pointer:coarse){
 .panel{display:flex;flex-direction:column}
@@ -187,7 +225,7 @@ function home(){clearInterval(S.t);S={view:'home'};
  const dn=c=>c.lines.filter(l=>P.ln[c.id+P0(l.sans)]).length,tot=COURSES.reduce((a,c)=>a+c.lines.length,0),all=COURSES.reduce((a,c)=>a+dn(c),0),
  ch=(i,k,v,l)=>`<div class="chip"><svg class="ico ${k}" viewBox="0 0 24 24"><use href="#I${i}"/></svg><div><b>${v}</b><small>${l}</small></div></div>`,
  card=c=>{const d=dn(c),n=c.lines.length,pc=Math.round(100*d/n);
- return `<div class="card" data-n="${c.name.toLowerCase()}"><div class="top"><div class="tile"><svg class="pc ${c.side}" viewBox="0 0 45 45"><use href="#P${c.ic}"/></svg></div><div><h3>${c.name}</h3><span class="pill">Play ${c.side==='w'?'White':'Black'}</span></div></div><p>${c.desc}</p><div class="meta"><small>${n} variation${n===1?'':'s'}</small><small><b>${d}</b> of ${n} completed</small></div><div class="bar"><i style="width:${pc}%"></i></div><div class="btns"><button class="pri" onclick="reps('${c.id}')">Reps</button><button onclick="learn('${c.id}')">Learn</button><button onclick="drill('${c.id}')">Drill</button></div></div>`},
+ return `<div class="card" data-n="${c.name.toLowerCase()}"><div class="top"><div class="tile"><svg class="pc ${c.side}" viewBox="0 0 45 45"><use href="#P${c.ic}"/></svg></div><div><h3>${c.name}</h3><span class="pill">Play ${c.side==='w'?'White':'Black'}</span></div></div><p>${c.desc}</p><div class="meta"><small>${n} variation${n===1?'':'s'}</small><small><b>${d}</b> of ${n} completed</small></div><div class="bar"><i style="width:${pc}%"></i></div><div class="btns"><button class="pri" onclick="reps('${c.id}')">Reps</button><button onclick="learn('${c.id}')">Learn</button><button onclick="study('${c.id}')">Study</button><button onclick="drill('${c.id}')">Drill</button></div></div>`},
  sec=(t,sd)=>{const l=COURSES.filter(c=>c.side===sd);return `<h2 class="sec">${t} (<span>${l.length}</span>)</h2><div class="grid">${l.map(card).join('')}</div>`};
  $('#app').innerHTML=`<h1>Drill chess openings move by move</h1><p class="sub">Choose one of ${COURSES.length} openings and play your side. The trainer plays the opponent's replies and goes through every variation in random order before repeating any.</p><div class="stats">${ch('flame','fl',P.streak,'day streak')}${ch('bolt','bo',P.xp,'total XP')}${ch('check','ck',all,'of '+tot+' variations completed')}${ch('star','st',P.best,'drill best')}</div><input id="q" class="q" type="search" placeholder="Search openings" aria-label="Search openings" oninput="flt(this.value)">${sec('Play as White','w')}${sec('Play as Black','b')}<p class="foot">A variation counts as completed when you play it through to the end. Reps go through every variation of a course in random order, then reshuffle. ${ME?`Progress is saved to your account (${esc(ME)}).`:window.acct?'Progress is saved in this browser. <a onclick="acct()">Log in</a> to save it to your account and keep it on any device.':'Progress is saved in this browser.'} <a id="rs" onclick="reset()">Reset progress</a></p><p class="foot"><a href="privacy.html">Privacy policy</a> · <a href="terms.html">Terms and conditions</a></p>`}
 function flt(v){v=v.trim().toLowerCase();document.querySelectorAll('.grid').forEach(g=>{let n=0;g.querySelectorAll('.card').forEach(c=>{const on=c.dataset.n.includes(v);c.hidden=!on;n+=on});g.previousElementSibling.querySelector('span').textContent=n})}
@@ -257,11 +295,11 @@ addEventListener('keydown',e=>{if(e.key==='Escape'&&DR)dragEnd(e,0)});
 addEventListener('blur',()=>dragEnd(null,0));
 addEventListener('contextmenu',e=>{if(DR&&DR.on)e.preventDefault()});
 // A click that arrives right after a drag is part of the drag, not a tap.
-addEventListener('click',e=>{if(Date.now()-DRT<400){DRT=0;e.stopPropagation();e.preventDefault()}},true);
+addEventListener('click',e=>{if(Date.now()-DRT<400&&e.target.closest&&e.target.closest('#board')){DRT=0;e.stopPropagation();e.preventDefault()}},true);
 const thru=(l,k)=>P0(l.sans.slice(0,k.ply))===k.path,fin=l=>(P.rd[S.c.id]||[]).includes(P0(l.sans));
 const pick=k=>{const o=S.c.lines.filter(l=>thru(l,k)&&!fin(l)),q=o.filter(l=>S.q&&S.q.includes(l)),a=q.length?q:o;return a[Math.random()*a.length|0]};
 const expMove=()=>{const k=Object.keys(S.node.k),t=S.line.sans[S.node.ply],s=thru(S.line,S.node)&&S.node.k[t]?t:k[0];return S.g.moves({verbose:true}).find(m=>m.san===s)};
-function move(from,to){const g=S.g,m=g.move({from,to,promotion:'q'});if(!m)return;
+function move(from,to){if(S.mode==='study')return sMove(from,to);const g=S.g,m=g.move({from,to,promotion:'q'});if(!m)return;
  const n=S.node,kid=n.k[m.san],L=kid&&!thru(S.line,kid)?pick(kid):null;
  if(kid&&(L||thru(S.line,kid))){
   P.xp+=S.mode==='drill'?5:10;if(S.mode==='drill'){S.combo++;S.score+=10+S.combo}touch();
@@ -315,6 +353,90 @@ function lshow(li,i,a){S.li=li;S.i=i;const l=S.c.lines[li],g=new Chess();let m=n
  $('#info').innerHTML=`<div class="line">${l.name}</div>`;msg(l.idea,'ok');
  $('#why').innerHTML=m?`<b>${m.color==='w'?'White':'Black'} plays ${m.san}.</b> ${why(g,m,pv)}`:'Step through the line with Next or the arrow keys.';
  $('#mv').innerHTML=l.sans.map((x,j)=>`<span class="${j<i?'on':''}">${j%2?'':(j/2+1)+'.'}${x}</span>`).join(' ')}
+// ---- Study: watch the move on one board, copy it on yours, then play the whole line from memory ----
+const san0=s=>String(s).replace(/[+#?!]+$/,''),isMine=i=>(i%2===0)===(S.c.side==='w');
+function study(id){const c=COURSES.find(x=>x.id===id);S={mode:'study',gen:0,phase:'watch'};sShell(c);
+ sStart(c.lines.find(l=>!P.ln[c.id+P0(l.sans)])||c.lines[0],'watch')}
+function sShell(c){S.c=c;clearInterval(S.t);
+ $('#app').innerHTML=`<div class="crumb sc"><button onclick="home()">Back to courses</button><span class="pill">Study</span></div>
+<div class="study"><div class="top"><h2 class="ttl sttl"><svg class="pc ${c.side}" viewBox="0 0 45 45"><use href="#P${c.ic}"/></svg>${c.name}</h2>
+<select id="ss" aria-label="Choose a variation" onchange="sStart(S.c.lines[+this.value],'watch')"></select></div>
+<div class="demow"><div class="lab">Watch</div><div class="boardw dmw"><div class="bcol"><div class="tray"></div><div class="dm"><div id="board2" class="board demo" role="img" aria-label="Demonstration board"></div><div id="cover" class="cover"><div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3l18 18M10.6 6.1A9.6 9.6 0 0 1 12 6c5 0 8.5 4 9.5 6a14 14 0 0 1-2.4 3.2M6.5 7.6A14 14 0 0 0 2.5 12c1 2 4.5 6 9.5 6a9 9 0 0 0 4.1-1M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg><b>Hidden</b><br>Play it from memory</div></div></div><div class="tray"></div></div></div></div>
+<div class="coach"><div id="info"></div><div id="why" class="why"></div></div><div id="msg" class="msg"></div>
+<div class="you"><div class="lab">Your board</div><div class="boardw"><div id="eb" class="eb" title="Estimate from material and piece placement. Not an engine."></div><div class="bcol"><div id="ct" class="tray"></div><div id="board" class="board"></div><div id="cb" class="tray"></div><div id="ov" class="ov"></div></div></div></div>
+<div class="act"><div id="ctl" class="btns"></div><p id="keys" class="keys"></p><div id="mv" class="mv"></div></div></div>`;
+ $('#keys').textContent='Keys: Space shows the move again, asks for a hint, or moves on. Left arrow starts the line over. Right arrow goes to the next variation.';scrollTo(0,0);if(matchMedia('(orientation:landscape) and (max-height:520px) and (pointer:coarse)').matches)$('.study').scrollIntoView({block:'start'})}
+function sOpts(){const c=S.c;$('#ss').innerHTML=c.lines.map((l,i)=>`<option value="${i}">${P.ln[c.id+P0(l.sans)]?'\u2713 ':''}${esc(l.name)}</option>`).join('');$('#ss').value=c.lines.indexOf(S.line)}
+// Start a variation. phase 'watch' = copy it move by move, 'recall' = play it from memory.
+function sStart(line,phase){S.gen++;S.line=line||S.line;S.phase=phase||'watch';S.sans=S.line.sans;S.i=0;S.g=new Chess();S.g2=new Chess();
+ S.sel=S.last=S.hint=S.anim=S.dl=S.pv=null;S.show='';S.miss=0;S.row=0;S.helped=false;S.lock=false;S.over=false;S.tot=S.sans.filter((_,i)=>isMine(i)).length;
+ $('#cover').classList.toggle('on',S.phase==='recall');$('#why').innerHTML='';$('#ov').classList.remove('on');
+ sOpts();draw();drawDemo();sCtl();sInfo();sMoves();
+ msg(S.phase==='recall'?'From memory now. The demo is hidden.':'Copy each move on your board.');sStep()}
+function sStep(){if(S.i>=S.sans.length)return sFin();
+ if(!isMine(S.i)){S.lock=true;sInfo();return after(sOpp,S.i?500:450)}
+ if(S.phase==='watch'){S.lock=true;after(()=>{sDemo();S.lock=false},S.i?450:300)}else S.lock=false;sInfo()}
+// The opponent's reply is played on both boards.
+function sOpp(){const san=S.sans[S.i],m=S.g.move(san);if(!m){console.warn('Study: could not play',san);S.i=S.sans.length;return sFin()}
+ S.last=m;S.anim=[m.from,m.to];S.hint=null;
+ if(S.phase==='watch'){S.g2=new Chess();S.sans.slice(0,S.i+1).forEach(x=>S.g2.move(x));S.dl=m;drawDemo({anim:[m.from,m.to]});$('#why').innerHTML=`<b>${m.color==='w'?'White':'Black'} plays ${m.san}.</b> ${why(S.g,m,S.pv)}`}
+ S.pv=m;S.i++;S.lock=false;draw();sMoves();sStep()}
+// The demo board plays your next move, with an arrow. Your board waits for you to copy it.
+function sDemo(again){if(S.over||S.phase!=='watch'||!isMine(S.i))return;
+ S.g2=new Chess();S.sans.slice(0,S.i).forEach(x=>S.g2.move(x));S.dl=S.last;
+ const play=()=>{if(S.over||S.phase!=='watch'||!isMine(S.i))return;const m=S.g2.move(S.sans[S.i]);if(!m)return;S.dl=m;S.show=m.san;
+  drawDemo({anim:[m.from,m.to],arrow:[m.from,m.to]});$('#why').innerHTML=why(S.g2,m,S.pv);sInfo();sMoves()};
+ if(again){S.show='';drawDemo();sInfo();after(play,350)}else play()}
+const sAgain=()=>sDemo(true),sAnswer=()=>S.g.moves({verbose:true}).find(m=>san0(m.san)===san0(S.sans[S.i]));
+// Called by tap and drag (through move()) when the mode is Study.
+function sMove(from,to){if(S.lock||S.over)return;const g=S.g,m=g.move({from,to,promotion:'q'});if(!m)return;
+ if(san0(m.san)===san0(S.sans[S.i])){
+  if(S.phase==='recall'&&!S.helped)P.xp+=10;touch();
+  S.helped=false;S.row=0;S.last=m;S.anim=[m.from,m.to];S.hint=null;S.sel=null;S.show='';S.pv=m;S.i++;
+  msg('Correct: '+m.san,'ok');draw();sMoves();if(S.i>=S.sans.length)return sFin();S.lock=true;sInfo();after(sOpp,450)}
+ else{g.undo();S.row++;S.sel=null;shake();
+  if(S.phase==='watch'){msg('Not that one. Copy the demo board.','no');const a=$('#board2 .arw');if(a){a.classList.remove('fl');a.getBoundingClientRect();a.classList.add('fl')}if(S.row>=2){S.row=0;sDemo(true)}}
+  else{S.miss++;const e=sAnswer();if(S.row>=2&&e){S.hint=[e.from];S.helped=true;msg('Not that one. Try the highlighted piece.','no')}else msg('Not that one. Try again.','no')}
+  draw();sInfo()}}
+function sHint(){if(S.over||S.lock||S.phase!=='recall')return;const e=sAnswer();if(!e)return;S.hint=[e.from];if(!S.helped){S.helped=true;S.miss++}draw();sInfo();msg('Hint: move the highlighted piece.')}
+function sFin(){S.lock=true;S.over=true;S.gen++;S.show='';S.sel=null;
+ if(S.phase==='watch'){S.phase='ready';msg('Line copied. Now play it from memory.','ok')}
+ else{S.phase='done';
+  if(!S.miss){const p=P0(S.sans),rd=P.rd[S.c.id]||(P.rd[S.c.id]=[]);P.ln[S.c.id+p]=(P.ln[S.c.id+p]||0)+1;if(!rd.includes(p))rd.push(p);P.xp+=20;touch();msg('Perfect recall. +20 XP','ok')}
+  else msg(`Finished with ${S.miss} miss${S.miss>1?'es':''}. Try again.`,'no')}
+ draw();sOpts();sInfo();sCtl();sMoves()}
+const sRecall=()=>sStart(S.line,'recall');
+function sNext(){const L=S.c.lines,i=L.indexOf(S.line);let n=null;for(let k=1;k<L.length&&!n;k++){const l=L[(i+k)%L.length];if(!P.ln[S.c.id+P0(l.sans)])n=l}sStart(n||L[(i+1)%L.length],'watch')}
+function sKey(k){const p=S.phase;if(k===' ')p==='watch'?sDemo(true):p==='ready'?sRecall():p==='recall'?sHint():S.miss?sRecall():sNext();
+ else if(k==='ArrowLeft')sStart(S.line,'watch');else if(k==='ArrowRight')sNext()}
+function sInfo(){const pri=(f,t)=>`<button class="pri" onclick="${f}">${t}</button>`,ph=S.phase,n=S.sans.slice(0,S.i).filter((_,i)=>isMine(i)).length,cnt=`Move ${Math.min(n+1,S.tot)} of ${S.tot}`,
+ st=(a,t,k)=>`<span class="st ${k}">${a} ${t}</span>`,
+ steps=`<div class="steps">${st(1,'Copy',ph==='watch'?'on':'ok')}${st(2,'Recall',ph==='recall'?'on':ph==='done'&&!S.miss?'ok':'')}</div>`;let b;
+ if(ph==='watch')b=S.show?`<small>${cnt}</small><div class="big">Play <b>${esc(S.show)}</b></div><small>Copy it on your board.</small>`:`<small>${cnt}</small><div class="big dim">${isMine(S.i)?'Watch\u2026':'Opponent replies\u2026'}</div>`;
+ else if(ph==='ready')b='<div class="big">Line copied</div><small>Next, play it without help.</small>'+pri('sRecall()','Play from memory');
+ else if(ph==='recall')b=`<small>${cnt}${S.miss?' \u00b7 '+S.miss+' miss'+(S.miss>1?'es':''):''}</small><div class="big${isMine(S.i)&&!S.over?'':' dim'}">${isMine(S.i)&&!S.over?'Your move':'Opponent replies\u2026'}</div>`;
+ else b=S.miss?`<div class="big">${S.miss} miss${S.miss>1?'es':''}</div><small>Play it again from memory.</small>`+pri('sRecall()','Try again from memory'):'<div class="big">Perfect</div><small>No misses, no hints.</small>'+pri('sNext()','Next variation');
+ $('#info').innerHTML=steps+b}
+function sCtl(){const p=S.phase,w="sStart(S.line,'watch')";
+ $('#ctl').innerHTML=p==='watch'?`<button onclick="sAgain()">Show again</button><button onclick="${w}">Restart</button><button onclick="sRecall()">Skip to memory</button>`
+ :p==='ready'?`<button class="pri" onclick="sRecall()">Play from memory</button><button onclick="${w}">Watch again</button>`
+ :p==='recall'?`<button onclick="sHint()">Hint</button><button onclick="${w}">Watch again</button><button onclick="sRecall()">Restart</button>`
+ :S.miss?`<button class="pri" onclick="sRecall()">Try again from memory</button><button onclick="${w}">Watch it again</button>`
+ :`<button class="pri" onclick="sNext()">Next variation</button><button onclick="${w}">Study again</button><button onclick="sRecall()">Recall again</button>`}
+// Moves so far. While you are still learning the line, the rest of it stays hidden.
+function sMoves(){const full=S.phase==='ready'||S.phase==='done',n=full?S.sans.length:S.phase==='watch'&&S.show?S.i+1:S.i;
+ $('#mv').innerHTML=S.sans.slice(0,n).map((x,j)=>`<span class="${j<S.i?'on':''}">${j%2?'':(j/2+1)+'.'}${x}</span>`).join(' ')}
+// The demo board: same look as yours, read-only, with an optional arrow for the move to copy.
+function arrowSvg(a,b,fl){const c=s=>{const f='abcdefgh'.indexOf(s[0]),r=+s[1]-1;return[(fl?7-f:f)+.5,(fl?r:7-r)+.5]},[x1,y1]=c(a),[x2,y2]=c(b),L=Math.hypot(x2-x1,y2-y1),ux=(x2-x1)/L,uy=(y2-y1)/L,
+ tx=x2-ux*.08,ty=y2-uy*.08,ex=tx-ux*.5,ey=ty-uy*.5,sx=x1+ux*.25,sy=y1+uy*.25,px=-uy*.3,py=ux*.3,f=n=>n.toFixed(3);
+ return `<svg class="arw" viewBox="0 0 8 8" aria-hidden="true"><line x1="${f(sx)}" y1="${f(sy)}" x2="${f(ex)}" y2="${f(ey)}"/><polygon points="${f(tx)},${f(ty)} ${f(ex+px)},${f(ey+py)} ${f(ex-px)},${f(ey-py)}"/></svg>`}
+function drawDemo(o){o=o||{};const g=S.g2,B=$('#board2');if(!g||!B)return;const fl=S.c.side==='b',ck=g.in_check();let h='';
+ for(let r=0;r<8;r++)for(let f=0;f<8;f++){const fi=fl?7-f:f,ra=fl?r:7-r,sq='abcdefgh'[fi]+(ra+1),p=g.get(sq),c=['sq',(fi+ra)%2?'l':'d'];
+  if(S.dl&&(S.dl.from===sq||S.dl.to===sq))c.push(o.arrow?'hint':'lm');if(ck&&p&&p.type==='k'&&p.color===g.turn())c.push('chk');
+  h+=`<div class="${c.join(' ')}" data-s="${sq}">${f===0?`<i class="co r">${ra+1}</i>`:''}${r===7?`<i class="co f">${'abcdefgh'[fi]}</i>`:''}${p?`<svg class="pc ${p.color}" viewBox="0 0 45 45"><use href="#P${p.type}"/></svg>`:''}</div>`}
+ if(o.arrow)h+=arrowSvg(o.arrow[0],o.arrow[1],fl);B.innerHTML=h;
+ if(o.anim&&!RM.matches){const[a,b]=o.anim,pa=B.querySelector(`[data-s="${a}"]`).getBoundingClientRect(),pb=B.querySelector(`[data-s="${b}"]`).getBoundingClientRect(),el=B.querySelector(`[data-s="${b}"] svg`);
+  if(el)el.animate([{transform:`translate(${pa.left-pb.left}px,${pa.top-pb.top}px)`},{transform:'none'}],{duration:320,easing:'cubic-bezier(.25,.9,.3,1)'})}}
 const NM={p:'pawn',n:'knight',b:'bishop',r:'rook',q:'queen',k:'king'},PV={p:1,n:3,b:3,r:5,q:9},CP={p:100,n:320,b:330,r:500,q:900},ST={p:8,n:2,b:2,r:2,q:1},FL='abcdefgh';
 function att(g,sq){const p=g.get(sq),f=FL.indexOf(sq[0]),r=+sq[1],o=[];if(!p)return o;const add=(x,y)=>{if(x>=0&&x<8&&y>=1&&y<=8)o.push(FL[x]+y)};
  if(p.type==='n')[[1,2],[2,1],[-1,2],[-2,1],[1,-2],[2,-1],[-1,-2],[-2,-1]].forEach(d=>add(f+d[0],r+d[1]));
@@ -349,6 +471,7 @@ function evbar(){const cp=ev(S.g),w=100/(1+Math.exp(-cp/350)),fl=S.c.side==='b',
 addEventListener('keydown',e=>{const t=e.target.tagName,k=e.key;if(!S.mode||['SELECT','INPUT','TEXTAREA'].includes(t)||e.metaKey||e.ctrlKey||e.altKey||![' ','ArrowLeft','ArrowRight'].includes(k))return;
  e.preventDefault();if(document.activeElement)document.activeElement.blur();
  if(S.mode==='learn')lstep(k==='ArrowLeft'?-1:1);
+ else if(S.mode==='study')sKey(k);
  else if(S.mode==='reps'){if(k===' ')S.over?begin():hint();else if(k==='ArrowRight')begin();else begin(S.line)}
  else if(S.ended&&k===' ')drill(S.c.id)});
 $('#app').innerHTML='<p class="sub" style="margin-top:28px">Loading openings…</p>';
